@@ -202,7 +202,7 @@ img, svg, canvas { max-width: 100%; }
 @media print {
   :root, :root[data-theme], :root:not([data-theme="light"]) {
     --bg: #fff; --panel: #fff; --ink: #000; --muted: #444; --line: #bbb; --head-bg: #eee;
-    --c1: #2f5da8; --c2: #d98324; --c3: #3a9a6a; --c4: #8a5cc2; --c5: #c8453b; --neg: #b42318; --pos: #067647;
+    --c1: #2f5da8; --c2: #d98324; --c3: #3a9a6a; --c4: #8a5cc2; --c5: #c8453b; --neg: #b42318; --pos: #067647; --c6: #2a8f9e; --c7: #9a7b2f; --c8: #7a7f8c;
   }
   .tvwrap.snap .tvchart { display: none; }
   .tvwrap.snap .chart-print { display: block; }
@@ -258,3 +258,32 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
 .stepper > button, .stepper > .field { margin: 0; }
 .stepper > button:nth-child(4) { grid-column: 1 / -1; justify-self: start; }
 @media (max-width: 560px) { .stepper > button { padding-inline: 10px; font-size: .9rem; } }
+
+.build-info { margin: 28px 0 8px; font-size: .78rem; color: var(--muted); text-align: center; }
+@media (max-width: 860px) { .brand { display: none; } .top-meta { flex: 1; } }
+
+/* 比例圖（甜甜圈／比例條）與圖表分析頁 */
+:root { --c6: #2a8f9e; --c7: #9a7b2f; --c8: #7a7f8c; }
+:root[data-theme="dark"] { --c6: #6cc3d0; --c7: #d4b86a; --c8: #a3a9b8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --c6: #6cc3d0; --c7: #d4b86a; --c8: #a3a9b8; } }
+.donut { margin: 10px 0 18px; }
+.donut figcaption { font-weight: 600; margin-bottom: 6px; }
+.donut-body { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.donut-svg { width: 150px; height: 150px; flex: 0 0 auto; }
+.donut-svg .donut-c1 { font-size: 9px; font-weight: 700; fill: var(--ink); }
+.donut-svg .donut-c2 { font-size: 7px; fill: var(--muted); }
+.donut-list { list-style: none; margin: 0; padding: 0; flex: 1 1 220px; min-width: 0; }
+.donut-list li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.donut-list .dl { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.donut-list .dv { font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--muted); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.ratiobar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); margin: 6px 0 8px; }
+.ratiobar .seg { display: block; height: 100%; }
+.dn0 { stroke: var(--c1); } .dn1 { stroke: var(--c2); } .dn2 { stroke: var(--c3); } .dn3 { stroke: var(--c4); }
+.dn4 { stroke: var(--c5); } .dn5 { stroke: var(--c6); } .dn6 { stroke: var(--c7); } .dn7 { stroke: var(--c8); }
+.sw0 { background: var(--c1); } .sw1 { background: var(--c2); } .sw2 { background: var(--c3); } .sw3 { background: var(--c4); }
+.sw4 { background: var(--c5); } .sw5 { background: var(--c6); } .sw6 { background: var(--c7); } .sw7 { background: var(--c8); }
+.incomebar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin: 8px 0; }
+.incomebar .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.chartgrid { display: grid; gap: 14px 24px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+@media print { .donut-svg { width: 130px; height: 130px; } .incomebar { display: none; } }

@@ -1,5 +1,7 @@
 // 應用程式進入點：載入狀態、計算模型、路由、行情／匯率更新。
 import { getState, subscribe, getLoadNote, hasData } from './data/store.js';
+import { BUILD_ID, BUILD_DATE } from './core/build.js';
+import { APP_VERSION } from './core/constants.js';
 import { canPrompt, isStandalone, onInstallChange, promptInstall } from './ui/install.js';
 import { reminderBanner, runReminder } from './ui/reminder.js';
 import { showError } from './ui/components/forms.js';
@@ -15,6 +17,7 @@ import { initBottomNav, updateBottomNav } from './ui/bottomnav.js';
 
 const ROUTES = [
   ['overview', 'P01 總覽', () => import('./ui/pages/overview.js')],
+  ['charts', 'P13 圖表分析', () => import('./ui/pages/charts.js')],
   ['monthly', 'P02 每月支出', () => import('./ui/pages/monthly.js')],
   ['salary', 'P03 月薪情境', () => import('./ui/pages/salary.js')],
   ['calendar', 'P04 繳費日曆', () => import('./ui/pages/calendar.js')],
@@ -135,7 +138,7 @@ function renderNav() {
   const nav = document.getElementById('nav');
   clear(nav);
   ROUTES.forEach(([key, label], i) => {
-    if (i === 9) nav.appendChild(h('div', { class: 'sep' }));
+    if (key === 'settings') nav.appendChild(h('div', { class: 'sep' }));
     nav.appendChild(h('a', { href: `#/${key}`, 'aria-current': key === app.route ? 'page' : null }, label));
   });
   updateBottomNav(app.route);
@@ -234,12 +237,15 @@ async function doRender() {
   const note = getLoadNote();
   const reminder = app.route === 'data' ? null : backupReminder(hasData());
   const keep = sameRoute ? captureUiState(main) : null;
+  const upd = app.updateReady ? h('div', { class: 'banner no-print', role: 'status' }, h('strong', { text: '網站已有新版本。' }), ' 重新整理即可套用（你的資料不會受影響）。　',
+    h('button', { type: 'button', class: 'small', text: '立即重新整理', onClick: () => location.reload() })) : null;
   const due = app.route === 'data' ? null : reminderBanner(app, schedule);
-  main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
+  main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(upd ? [upd] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
   renderedRoute = app.route;
   if (keep) restoreUiState(main, keep);
   document.title = `${ROUTES.find((r) => r[0] === app.route)[1].replace(/^P\d+ /, '')} - 個人資產負債表`;
   window.scrollTo(0, y);
+  main.appendChild(h('p', { class: 'build-info no-print' }, `版本 ${APP_VERSION}　·　更新於 ${BUILD_DATE}　·　${BUILD_ID}`));
   runReminder(app);
 }
 
@@ -284,7 +290,12 @@ subscribe((s) => {
 if ('serviceWorker' in navigator) {
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
   if ((location.protocol === 'https:' && !local) || (local && new URLSearchParams(location.search).has('sw'))) {
-    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service Worker 註冊失敗', e));
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { app.updateReady = true; schedule(); } });
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      app.swReg = reg;
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+    }).catch((e) => console.warn('Service Worker 註冊失敗', e));
   }
 }
 

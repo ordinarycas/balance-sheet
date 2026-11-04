@@ -3,6 +3,8 @@ import { h } from '../dom.js';
 import { section } from '../components/table.js';
 import { numField, dateField, labeled, button, choiceField } from '../components/forms.js';
 import { ENGINES } from '../components/chart.js';
+import { BUILD_ID, BUILD_DATE } from '../../core/build.js';
+import { APP_VERSION } from '../../core/constants.js';
 import { installState, promptInstall } from '../install.js';
 import { enable, permission, unregisterBackground } from '../reminder.js';
 
@@ -44,6 +46,14 @@ export default function render(app) {
     labeled('主題', choiceField({ value: app.prefs.theme, options: [['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']], onChange: (v) => { app.setPref('theme', v); } })),
     labeled('圖表引擎', choiceField({ value: app.prefs.chartLib, options: ENGINES, onChange: (v) => { app.setPref('chartLib', v); } }))),
     h('p', { class: 'note', text: '各引擎皆從本站載入、不連外；選用時才下載。Lightweight Charts／Chart.js 以 Canvas 繪製，列印時自動轉為圖片；D3.js／ApexCharts 為 SVG，列印為向量。未提供 Nivo：它依賴 React，需要建置工具鏈，與本站「零建置、純靜態」的設計衝突。' })));
+
+  root.appendChild(section('版本與更新', h('div', { class: 'row' },
+    h('span', null, `版本 ${APP_VERSION}　·　更新於 ${BUILD_DATE}　·　${BUILD_ID}`),
+    button('檢查更新', async () => {
+      const reg = app.swReg;
+      if (!reg) { app.toast('目前環境未啟用離線快取（Service Worker），重新整理頁面即可取得最新版'); return; }
+      try { await reg.update(); app.toast(app.updateReady ? '有新版本，請重新整理' : '已是最新版本'); } catch { app.toast('檢查失敗，請確認網路連線'); }
+    })), h('p', { class: 'note', text: '更新日期＝網站內容最後一次變動的日期；安裝為 App 或離線使用時，有新版本會在頁面頂端提示重新整理。' })));
 
   root.appendChild(section('資料', h('p', null, '匯出入、Excel 與清除本機資料都集中在 ', h('a', { href: '#/data', text: 'P12 資料匯入／匯出' }), '。')));
   return root;

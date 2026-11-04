@@ -11,6 +11,9 @@ export const DEFAULT_PREFS = {
   lastBackupAt: 0,         // 上次匯出備份時間（毫秒）
   editsSinceBackup: 0,     // 備份後的修改次數
   backupSnoozeUntil: 0,    // 暫停備份提醒到何時（毫秒）
+  chartIncomeMode: 'fixed', // 圖表分析的收入情境：fixed（固定收入）| zero（完全沒有收入）
+  chartIncome: 0,          // 固定月收入（NT$）；0＝沿用月薪情境第一筆
+  chartHorizon: 60,        // 推演月數
   remindTomorrow: false,   // 明天有應繳項目時提醒（橫幅＋系統通知）
   remindNotifiedDay: '',   // 最近一次送出系統通知的日期（每天一次）
   remindSeenDay: '',       // 最近一次按「知道了」的日期
@@ -30,6 +33,9 @@ export function getPrefs() {
   }
   if (!['auto', 'light', 'dark'].includes(p.theme)) p.theme = 'auto';
   if (!['lw', 'chartjs', 'd3', 'apex'].includes(p.chartLib)) p.chartLib = 'lw';
+  if (!['fixed', 'zero'].includes(p.chartIncomeMode)) p.chartIncomeMode = 'fixed';
+  if (![12, 24, 36, 60, 120].includes(p.chartHorizon)) p.chartHorizon = 60;
+  if (!Number.isFinite(p.chartIncome) || p.chartIncome < 0) p.chartIncome = 0;
   cache = p;
   return p;
 }
