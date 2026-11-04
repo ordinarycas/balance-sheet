@@ -14,6 +14,7 @@ import { h, clear } from './ui/dom.js';
 import { commit, setRenderHook, toast } from './ui/actions.js';
 import { disposeCharts, chartsReady } from './ui/components/chart.js';
 import { initBottomNav, updateBottomNav } from './ui/bottomnav.js';
+import { checkForUpdate, applyUpdate, onUpdateState, state as updState } from './ui/update.js';
 
 const ROUTES = [
   ['overview', 'P01 總覽', () => import('./ui/pages/overview.js')],
@@ -237,15 +238,15 @@ async function doRender() {
   const note = getLoadNote();
   const reminder = app.route === 'data' ? null : backupReminder(hasData());
   const keep = sameRoute ? captureUiState(main) : null;
-  const upd = app.updateReady ? h('div', { class: 'banner no-print', role: 'status' }, h('strong', { text: '網站已有新版本。' }), ' 重新整理即可套用（你的資料不會受影響）。　',
-    h('button', { type: 'button', class: 'small', text: '立即重新整理', onClick: () => location.reload() })) : null;
+  const upd = app.updateReady || updState.available ? h('div', { class: 'banner no-print', role: 'status' }, h('strong', { text: '網站已有新版本。' }), ' 按下「立即更新」即可套用（你的資料不會受影響）。　',
+    h('button', { type: 'button', class: 'small', text: '立即更新', onClick: () => applyUpdate() })) : null;
   const due = app.route === 'data' ? null : reminderBanner(app, schedule);
   main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(upd ? [upd] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
   renderedRoute = app.route;
   if (keep) restoreUiState(main, keep);
   document.title = `${ROUTES.find((r) => r[0] === app.route)[1].replace(/^P\d+ /, '')} - 個人資產負債表`;
   window.scrollTo(0, y);
-  main.appendChild(h('p', { class: 'build-info no-print' }, `版本 ${APP_VERSION}　·　更新於 ${BUILD_DATE}　·　${BUILD_ID}`));
+  main.appendChild(h('p', { class: 'build-info no-print' }, `版本 ${APP_VERSION}　·　更新於 ${BUILD_DATE}　·　${BUILD_ID}　`, h('button', { type: 'button', class: 'linklike', text: updState.checking ? '檢查中…' : '檢查更新', disabled: updState.checking, onClick: () => checkForUpdate() })));
   runReminder(app);
 }
 
@@ -312,7 +313,11 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 }
 
 applyTheme();
-initBottomNav(ROUTES);
+initBottomNav(ROUTES, { onCheckUpdate: () => checkForUpdate() });
+onUpdateState(() => schedule());
+// 回到前景時靜默檢查一次（最多每 30 分鐘一次），發現新版就顯示橫幅
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - updState.lastCheckAt > 30 * 60 * 1000) checkForUpdate({ quiet: true }); });
+checkForUpdate({ quiet: true });
 document.getElementById('theme-toggle')?.addEventListener('click', () => app.setPref('theme', isDark() ? 'light' : 'dark'));
 // 「自動」主題：系統深淺色改變時即時重繪（含圖表）
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (getPrefs().theme === 'auto') schedule(); });

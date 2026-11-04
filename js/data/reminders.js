@@ -5,7 +5,7 @@ const money = (n) => Math.abs(Math.round(n)).toLocaleString('en-US');
 
 /** 某日到期的支出（費用為負數）。 */
 export function dueOn(events, date) {
-  return events.filter((e) => e.date === date && e.amount < 0);
+  return events.filter((e) => e.date === date && (e.amount < 0 || e.custom));
 }
 
 export function tomorrowOf(today) { return iso(dn(today) + 1); }
@@ -13,15 +13,18 @@ export function tomorrowOf(today) { return iso(dn(today) + 1); }
 /** 通知標題與內文；項目多時只列前 5 筆。 */
 export function describeDue(list) {
   const total = list.reduce((a, e) => a + Math.abs(e.amount), 0);
-  const lines = list.slice(0, 5).map((e) => `${e.item}　NT$${money(e.amount)}`);
+  const lines = list.slice(0, 5).map((e) => (e.amount ? `${e.item}　NT$${money(e.amount)}` : e.item));
   if (list.length > 5) lines.push(`…另有 ${list.length - 5} 筆`);
-  return { title: `明天要繳 ${list.length} 筆，合計 NT$${money(total)}`, body: lines.join('\n') };
+  const title = list.some((e) => e.custom && e.amount >= 0)
+    ? `明天有 ${list.length} 項行程，應繳合計 NT$${money(list.filter((e) => e.amount < 0).reduce((x, e) => x + e.amount, 0))}`
+    : `明天要繳 ${list.length} 筆，合計 NT$${money(total)}`;
+  return { title, body: lines.join('\n') };
 }
 
 /** 給 Service Worker 背景檢查用的精簡快照：只含接下來 14 天的日期、項目與金額。 */
 export function snapshot(events, today, days = 14) {
   const end = dn(today) + days;
-  return events.filter((e) => e.amount < 0 && e.dn >= dn(today) && e.dn <= end).map((e) => ({ date: e.date, item: e.item, amount: e.amount }));
+  return events.filter((e) => (e.amount < 0 || e.custom) && e.dn >= dn(today) && e.dn <= end).map((e) => ({ date: e.date, item: e.item, amount: e.amount }));
 }
 
 const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
@@ -51,11 +54,11 @@ export function buildIcs(events, { today, stamp }) {
   const seen = new Map();
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//personal-balance-sheet//繳費提醒//ZH', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:繳費提醒'];
   for (const e of events) {
-    if (e.amount >= 0 || e.dn < dn(today)) continue;
+    if ((e.amount >= 0 && !e.custom) || e.dn < dn(today)) continue;
     const key = `${e.date}|${e.item}`;
     const n = (seen.get(key) ?? 0) + 1;
     seen.set(key, n);
-    const summary = `繳費：${e.item} NT$${money(e.amount)}`;
+    const summary = e.amount < 0 ? `繳費：${e.item} NT$${money(e.amount)}` : e.custom ? `${e.item}${e.amount ? ` NT$${money(e.amount)}（收入）` : ''}` : e.item;
     const hash = [...key].reduce((h, c) => (h * 31 + c.codePointAt(0)) >>> 0, 7).toString(16);
     L.push('BEGIN:VEVENT',
       `UID:${compactDate(e.date)}-${hash}-${n}@pfs.local`,

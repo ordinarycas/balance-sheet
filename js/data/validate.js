@@ -101,7 +101,7 @@ function amountField(c, v, path, { expense = true } = {}) {
 // ---- 各區塊 ----
 function vSettings(c, raw) {
   const o = rObj(c, raw, 'settings', { required: true });
-  unknownKeys(c, o, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart'], 'settings');
+  unknownKeys(c, o, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart', 'payDay'], 'settings');
   const d = defaultSettings();
   return {
     asOfDate: rDate(c, o.asOfDate, 'settings.asOfDate'),
@@ -109,6 +109,7 @@ function vSettings(c, raw) {
     dayCountPledge: rNum(c, o.dayCountPledge, 'settings.dayCountPledge', { def: d.dayCountPledge, int: true, min: 1, max: 366 }),
     usdTwdManual: rNum(c, o.usdTwdManual, 'settings.usdTwdManual', { def: d.usdTwdManual, min: 0, minEx: true }),
     monthStart: rMonth(c, o.monthStart, 'settings.monthStart'),
+    payDay: rDay(c, o.payDay, 'settings.payDay'),
   };
 }
 
@@ -254,10 +255,11 @@ function vStocks(c, raw, base, withLtv) {
 
 function vPledge(c, raw) {
   const o = rObj(c, raw, 'pledge');
-  unknownKeys(c, o, ['borrowed', 'interestDay', 'stocks'], 'pledge');
+  unknownKeys(c, o, ['borrowed', 'interestDay', 'accountName', 'stocks'], 'pledge');
   return {
     borrowed: rNum(c, o.borrowed, 'pledge.borrowed', { def: 0 }),
     interestDay: rDay(c, o.interestDay, 'pledge.interestDay'),
+    accountName: rStr(c, o.accountName, 'pledge.accountName', { max: 40 }),
     stocks: vStocks(c, o.stocks, 'pledge.stocks', true),
   };
 }
@@ -327,6 +329,22 @@ function vCards(c, raw) {
     statementDay: dayMap(c, o.statementDay, 'cards.statementDay'),
     names, entries, fixedFees,
   };
+}
+
+function vEvents(c, raw) {
+  const arr = rArr(c, raw, 'events');
+  const seen = new Set();
+  return arr.map((e, i) => {
+    const p = `events[${i}]`;
+    if (!isV(e)) { c.err(p, '必須是物件', 'V6'); return null; }
+    unknownKeys(c, e, ['id', 'date', 'item', 'amount', 'note'], p);
+    const id = rStr(c, e.id, `${p}.id`, { required: true, max: 40 });
+    if (id) { if (seen.has(id)) c.err(`${p}.id`, `id「${id}」重複`, 'V10'); seen.add(id); }
+    const date = rDate(c, e.date, `${p}.date`, { required: true });
+    const item = rStr(c, e.item, `${p}.item`, { required: true, max: 60 });
+    if (e.item !== undefined && typeof e.item === 'string' && !e.item.trim()) c.err(`${p}.item`, '活動名稱不可空白', 'V6');
+    return { id, date, item, amount: rNum(c, e.amount, `${p}.amount`, { def: 0 }), note: rStr(c, e.note, `${p}.note`, { max: 200 }) };
+  }).filter((x) => x && x.id && x.date);
 }
 
 function vRent(c, raw) {
@@ -414,7 +432,7 @@ export function validateObject(input) {
     if (obj[name] === undefined) c.err(name, '缺少必要區塊', 'V6');
   }
   const builders = { settings: vSettings, loans: vLoans, pledge: vPledge, holdings: (cc, r) => vStocks(cc, r, 'holdings', false),
-    realizedPnl: vPnl, cards: vCards, rent: vRent, home: vHome, salary: vSalary };
+    realizedPnl: vPnl, cards: vCards, rent: vRent, home: vHome, salary: vSalary, events: vEvents };
   for (const name of SECTIONS) {
     if (obj[name] === undefined && !REQUIRED_SECTIONS.includes(name)) data[name] = defaultSection(name);
     else if (obj[name] !== undefined) data[name] = builders[name](c, obj[name]);

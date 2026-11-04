@@ -17,11 +17,11 @@ function fmtN(x) {
 export function buildCalendar(state, schedules, pledgeCalc, months, asOfDn) {
   const events = [];
   let seq = 0;
-  const push = (dateDn, item, amount, note, cat) => {
+  const push = (dateDn, item, amount, note, cat, extra) => {
     if (Number.isNaN(dateDn)) return;
     const amt = D(amount).toNumber();
-    if (amt === 0) return;
-    events.push({ dn: dateDn, date: iso(dateDn), item, amount: amt, note, cat, seq: seq++ });
+    if (amt === 0 && !extra) return; // 自訂活動允許沒有金額
+    events.push({ dn: dateDn, date: iso(dateDn), item, amount: amt, note, cat, seq: seq++, ...extra });
   };
   const ids = cardIds(state.cards);
 
@@ -76,12 +76,20 @@ export function buildCalendar(state, schedules, pledgeCalc, months, asOfDn) {
     if (Number.isInteger(pDay) && pledgeCalc) {
       push(
         dayInMonthOf(m1, 0, pDay),
-        '股票質押利息（預估）',
+        `${state.pledge?.accountName || '股票質押'}利息（預估）`,
         D(pledgeCalc.dailyInterest).mul(daysInMonthOf(m1)).neg(),
         '已借金額×年利率÷360；實際以對帳單為準',
         '股票質押',
       );
     }
+  }
+
+  // 7. 使用者自訂的單筆活動（不受 12 個月視窗以外的月份影響）
+  const inWindow = new Set(months);
+  for (const ev of state.events || []) {
+    const d = dn(ev.date);
+    if (!inWindow.has(monthKey(d))) continue;
+    push(d, ev.item, ev.amount, ev.note || '自訂活動', '自訂', { custom: true, eventId: ev.id });
   }
 
   events.sort((a, b) => a.dn - b.dn || a.seq - b.seq);

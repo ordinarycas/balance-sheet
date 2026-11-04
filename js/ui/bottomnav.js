@@ -29,7 +29,7 @@ let moreBtn = null;
 let routeLinks = new Map();
 
 /** @param {Array<[string,string,Function]>} routes */
-export function initBottomNav(routes) {
+export function initBottomNav(routes, { onCheckUpdate } = {}) {
   const label = new Map(routes.map((r) => [r[0], r[1]]));
   bar = document.getElementById('bottomnav');
   if (!bar) return;
@@ -44,7 +44,8 @@ export function initBottomNav(routes) {
   moreBtn = h('button', { type: 'button', 'aria-haspopup': 'dialog', 'aria-label': '更多功能' }, icon('more'), h('span', { text: '更多' }));
   bar.appendChild(moreBtn);
 
-  sheet = h('dialog', { class: 'sheet', 'aria-label': '更多功能' },
+  const grip = h('div', { class: 'sheet-grip', role: 'separator', 'aria-orientation': 'horizontal', tabindex: '0', 'aria-label': '拖曳調整面板高度（也可用上下方向鍵）', title: '拖曳調整高度；雙擊切換' }, h('span'));
+  sheet = h('dialog', { class: 'sheet', 'aria-label': '更多功能' }, grip,
     h('div', { class: 'sheet-head' }, h('strong', { text: '更多功能' }),
       h('button', { type: 'button', class: 'small', text: '關閉', onclick: () => sheet.close() })),
     ...GROUPS.map(([title, keys]) => h('div', { class: 'sheet-group' },
@@ -54,7 +55,9 @@ export function initBottomNav(routes) {
         routeLinks.set(k, a);
         return a;
       })))));
+  if (onCheckUpdate) sheet.appendChild(h('div', { class: 'sheet-group' }, h('button', { type: 'button', class: 'sheet-update', text: '檢查網站更新', onclick: () => onCheckUpdate() })));
   document.body.appendChild(sheet);
+  enableResize(sheet, grip);
 
   moreBtn.addEventListener('click', () => { if (!sheet.open) sheet.showModal(); });
   sheet.addEventListener('click', (e) => { if (e.target === sheet || e.target.closest('a')) sheet.close(); }); // 點背景或連結即關閉
@@ -67,4 +70,43 @@ export function updateBottomNav(route) {
   }
   const inMore = !PRIMARY.some(([k]) => k === route);
   if (inMore) moreBtn.setAttribute('aria-current', 'page'); else moreBtn.removeAttribute('aria-current');
+}
+
+// ---- 面板高度可拖曳（往上拉變高、往下拉變矮；拉得很矮就收起）。高度記在本機，下次沿用。 ----
+const H_KEY = 'pfs.sheetHeight';
+const MIN_H = 160;
+const maxH = () => Math.round(window.innerHeight * 0.92);
+const clampH = (v) => Math.min(maxH(), Math.max(MIN_H, Math.round(v)));
+
+function enableResize(dlg, grip) {
+  const apply = (px) => { dlg.style.height = px ? `${clampH(px)}px` : ''; grip.setAttribute('aria-valuenow', String(px ? clampH(px) : Math.round(dlg.getBoundingClientRect().height))); };
+  const save = (px) => { try { if (px) localStorage.setItem(H_KEY, String(clampH(px))); else localStorage.removeItem(H_KEY); } catch { /* 隱私模式略過 */ } };
+  let saved = 0;
+  try { saved = Number(localStorage.getItem(H_KEY)) || 0; } catch { /* 略過 */ }
+  const restore = () => { apply(saved); };
+  new MutationObserver(() => { if (dlg.open) restore(); }).observe(dlg, { attributes: true, attributeFilter: ['open'] });
+
+  let startY = 0; let startH = 0; let dragging = false;
+  grip.addEventListener('pointerdown', (e) => {
+    dragging = true; startY = e.clientY; startH = dlg.getBoundingClientRect().height;
+    grip.setPointerCapture(e.pointerId); dlg.classList.add('resizing'); e.preventDefault();
+  });
+  grip.addEventListener('pointermove', (e) => { if (dragging) apply(startH + (startY - e.clientY)); });
+  const end = (e) => {
+    if (!dragging) return;
+    dragging = false; dlg.classList.remove('resizing');
+    const h = startH + (startY - e.clientY);
+    if (h < MIN_H - 40) { dlg.close(); apply(saved); return; } // 拖到很矮＝收起
+    saved = clampH(h); save(saved); apply(saved);
+  };
+  grip.addEventListener('pointerup', end);
+  grip.addEventListener('pointercancel', end);
+  grip.addEventListener('dblclick', () => { const cur = dlg.getBoundingClientRect().height; saved = cur < maxH() - 20 ? maxH() : 0; save(saved); apply(saved); });
+  grip.addEventListener('keydown', (e) => {
+    const cur = dlg.getBoundingClientRect().height;
+    const next = e.key === 'ArrowUp' ? cur + 40 : e.key === 'ArrowDown' ? cur - 40 : e.key === 'Home' ? MIN_H : e.key === 'End' ? maxH() : null;
+    if (next === null) return;
+    e.preventDefault(); saved = clampH(next); save(saved); apply(saved);
+  });
+  window.addEventListener('resize', () => { if (dlg.open && saved) apply(saved); });
 }

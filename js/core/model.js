@@ -25,7 +25,7 @@ export function computeModel(state, ctx) {
   const schedules = (state.loans || []).map((l) => buildSchedule(l, { usdTwd, dayCountLoan }));
   const statuses = schedules.map((s) => loanStatus(s, asOfDn, dayCountLoan));
   const agg = aggregate(schedules);
-  const pledge = computePledge(state.pledge, quotes, asOfDn, dayCountPledge);
+  const pledge = { ...computePledge(state.pledge, quotes, asOfDn, dayCountPledge), accountName: state.pledge?.accountName || '' };
   const holdings = computeHoldings(state.holdings, quotes);
   const pnl = computePnl(state.realizedPnl);
 
@@ -38,7 +38,7 @@ export function computeModel(state, ctx) {
   // ---- 總覽 ----
   const loanRows = statuses.filter((_, i) => !schedules[i].error);
   const pledgeRow = {
-    name: '股票質押（已借）', balanceTWD: pledge.borrowed, annualRate: pledge.weightedRate,
+    name: `${state.pledge?.accountName || '股票質押'}（已借）`, balanceTWD: pledge.borrowed, annualRate: pledge.weightedRate,
     dailyInterestTWD: pledge.dailyInterest, monthEstimateTWD: pledge.monthEstimate,
   };
   const totalBalance = sum([...loanRows.map((r) => r.balanceTWD), pledge.borrowed]);

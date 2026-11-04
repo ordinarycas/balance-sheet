@@ -1,12 +1,14 @@
 // P10 設定
 import { h } from '../dom.js';
 import { section } from '../components/table.js';
-import { numField, dateField, labeled, button, choiceField } from '../components/forms.js';
+import { cardIds } from '../../core/expenses.js';
+import { numField, textField, dateField, labeled, button, choiceField } from '../components/forms.js';
 import { ENGINES } from '../components/chart.js';
 import { BUILD_ID, BUILD_DATE } from '../../core/build.js';
 import { APP_VERSION } from '../../core/constants.js';
+import { checkForUpdate, applyUpdate, lastCheckText, state as updState } from '../update.js';
 import { installState, promptInstall } from '../install.js';
-import { enable, permission, unregisterBackground } from '../reminder.js';
+import { enable, permission, disable } from '../reminder.js';
 
 function toggle(app, key, label, hint) {
   const box = h('input', { type: 'checkbox', checked: !!app.prefs[key] });
@@ -27,10 +29,13 @@ export default function render(app) {
     labeled('查詢基準日', dateField({ value: st.settings.asOfDate ?? '', nullable: true, mutate: (d, v) => { d.settings.asOfDate = v; } }), '留空＝使用今天（台北時間）'),
     labeled('信貸／保單計息天數基準', numField({ value: st.settings.dayCountLoan, int: true, min: 1, max: 366, mutate: (d, v) => { d.settings.dayCountLoan = v; } }), '預設 365'),
     labeled('股票質押計息天數基準', numField({ value: st.settings.dayCountPledge, int: true, min: 1, max: 366, mutate: (d, v) => { d.settings.dayCountPledge = v; } }), '預設 360'),
+    labeled('每月發薪日', numField({ value: st.settings.payDay ?? '', int: true, min: 1, max: 31, nullable: true, mutate: (d, v) => { d.settings.payDay = v; } }), '用於「下次發薪」倒數；31 日遇到沒有該日的月份取月底'),
     labeled('USD/TWD 匯率（手動備援）', numField({ value: st.settings.usdTwdManual, min: 0, step: '0.0001', mutate: (d, v) => { d.settings.usdTwdManual = v; } }), '自動匯率取不到時使用')),
   h('div', { class: 'row' }, h('span', null, `目前採用匯率：${app.usdTwd.toFixed(4)}（${app.prefs.autoFx && fx ? `自動，${fx.source}${fx.date ? ` ${fx.date}` : ''}` : '手動'}）`),
     app.fxStatus === 'fail' ? h('span', { class: 'pill warn', text: '自動匯率暫時無法取得，使用手動' }) : null,
     button('重新取得匯率', () => app.refreshFx()))));
+
+  root.appendChild(section('名稱設定（戶頭、卡片、借款）', namesBlock(app)));
 
   root.appendChild(section('安裝成手機 App', installBlock(app)));
 
@@ -49,11 +54,9 @@ export default function render(app) {
 
   root.appendChild(section('版本與更新', h('div', { class: 'row' },
     h('span', null, `版本 ${APP_VERSION}　·　更新於 ${BUILD_DATE}　·　${BUILD_ID}`),
-    button('檢查更新', async () => {
-      const reg = app.swReg;
-      if (!reg) { app.toast('目前環境未啟用離線快取（Service Worker），重新整理頁面即可取得最新版'); return; }
-      try { await reg.update(); app.toast(app.updateReady ? '有新版本，請重新整理' : '已是最新版本'); } catch { app.toast('檢查失敗，請確認網路連線'); }
-    })), h('p', { class: 'note', text: '更新日期＝網站內容最後一次變動的日期；安裝為 App 或離線使用時，有新版本會在頁面頂端提示重新整理。' })));
+    button(updState.checking ? '檢查中…' : '檢查更新', () => checkForUpdate(), '', '向伺服器確認有沒有新版本'),
+    h('span', { class: 'note', text: updState.available ? `有新版本（${updState.remote?.date}）` : lastCheckText() }),
+    updState.available ? button('立即更新', () => applyUpdate(), 'primary') : null), h('p', { class: 'note', text: '更新日期＝網站內容最後一次變動的日期；安裝為 App 或離線使用時，有新版本會在頁面頂端提示重新整理。' })));
 
   root.appendChild(section('資料', h('p', null, '匯出入、Excel 與清除本機資料都集中在 ', h('a', { href: '#/data', text: 'P12 資料匯入／匯出' }), '。')));
   return root;
@@ -68,7 +71,7 @@ function remindBlock(app) {
     if (box.checked) {
       const p = await enable(app);
       app.toast(p === 'granted' ? '已開啟：明天有應繳項目時會提醒你' : `已開啟頁內橫幅提醒；${PERM_ZH[p] ?? ''}`);
-    } else { await unregisterBackground(); }
+    } else { await disable(); app.toast('已關閉繳費提醒'); }
     app.rerender();
   });
   return h('div', null,
@@ -97,4 +100,20 @@ function installBlock(app) {
       h('p', { class: 'note', text: '需要 HTTPS 網址（例如 GitHub Pages）才能安裝；用電腦本機網址（localhost）測試時不會出現。已安裝過或剛拒絕過，瀏覽器可能暫時不再提示。' }));
   }
   return h('div', null, ...kids);
+}
+
+/** 自訂各戶頭的顯示名稱：信用卡（卡別代號）、借款、股票質押帳戶。名稱只在這個瀏覽器的資料裡，會一併出現在圖表、日曆與匯出檔。 */
+function namesBlock(app) {
+  const st = app.state;
+  const ids = cardIds(st.cards);
+  const rows = [];
+  ids.forEach((id) => rows.push(labeled(`信用卡／戶頭（代號 ${id}）`, textField({
+    value: st.cards.names[id] ?? '', max: 40, placeholder: id,
+    mutate: (d, v) => { if (v) d.cards.names[id] = v; else delete d.cards.names[id]; },
+  }))));
+  st.loans.forEach((l, i) => rows.push(labeled(`借款 ${i + 1}`, textField({ value: l.name, max: 40, placeholder: '借款名稱', mutate: (d, v) => { d.loans[i].name = v; } }))));
+  rows.push(labeled('股票質押帳戶', textField({ value: st.pledge.accountName ?? '', max: 40, placeholder: '股票質押', mutate: (d, v) => { d.pledge.accountName = v; } })));
+  return h('div', null,
+    h('div', { class: 'formgrid names' }, ...rows),
+    h('p', { class: 'note', text: ids.length ? '清空欄位會還原成預設名稱（卡片顯示代號）。' : '還沒有信用卡；到「P09 支出」新增後，這裡就能改名稱。' }));
 }

@@ -110,7 +110,7 @@ export function button(label, onClick, cls = '', title) {
 }
 
 export function deleteButton(onClick, label = '刪除') {
-  return h('button', { type: 'button', class: 'small danger', onClick, title: label }, '✕');
+  return h('button', { type: 'button', class: 'small danger', onClick, title: label, 'aria-label': label }, '✕');
 }
 
 /** 把貼上的文字（Excel 欄位、逗號／Tab／換行分隔）轉成數字陣列。支援 1,234、NT$、全形負號與括號負數；無法解析的格子為 null。 */

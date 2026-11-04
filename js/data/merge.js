@@ -7,6 +7,7 @@
 //   cards.fixedFees  細項｜卡別｜起算月  卡別設定（payDay／statementDay／names）  卡別代號
 //   rent.electricity / home.water / home.electricity   月份
 //   salary.scenarios  月薪數字（聯集）
+//   events       id（自訂行事曆活動）
 //
 // 策略（每個區塊各自選）：
 //   skip    完全不動這個區塊
@@ -66,7 +67,7 @@ function mergeScalars(target, current, incoming, keys, policy, rep) {
 const SECTION_MERGERS = {
   settings(cur, inc, policy) {
     const next = structuredClone(cur); const rep = emptyRep();
-    mergeScalars(next, cur, inc, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart'], policy, rep);
+    mergeScalars(next, cur, inc, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart', 'payDay'], policy, rep);
     return { next, rep };
   },
   loans(cur, inc, policy) {
@@ -77,7 +78,7 @@ const SECTION_MERGERS = {
     const next = structuredClone(cur); const rep = emptyRep();
     const s = mergeKeyed(cur.stocks, inc.stocks, (x) => x.code, policy);
     next.stocks = s.items; addRep(rep, s.rep);
-    mergeScalars(next, cur, inc, ['borrowed', 'interestDay'], policy, rep);
+    mergeScalars(next, cur, inc, ['borrowed', 'interestDay', 'accountName'], policy, rep);
     return { next, rep };
   },
   holdings(cur, inc, policy) {
@@ -108,6 +109,10 @@ const SECTION_MERGERS = {
     mergeScalars(next, cur, inc, ['internetFee', 'internetDay'], policy, rep);
     for (const f of ['water', 'electricity']) { const m = mergeMap(cur[f], inc[f], policy); next[f] = m.map; addRep(rep, m.rep); }
     return { next, rep };
+  },
+  events(cur, inc, policy) {
+    const { items, rep } = mergeKeyed(cur ?? [], inc ?? [], (x) => x.id, policy);
+    return { next: items, rep };
   },
   salary(cur, inc, policy) {
     const next = structuredClone(cur); const rep = emptyRep();

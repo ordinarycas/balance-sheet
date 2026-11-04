@@ -184,7 +184,7 @@ img, svg, canvas { max-width: 100%; }
   .bottomnav a:focus-visible, .bottomnav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
   main { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .toasts { bottom: calc(68px + env(safe-area-inset-bottom)); }
-  .sheet { position: fixed; top: auto; bottom: 0; left: 0; margin: 0; width: 100%; max-width: none; border-radius: 16px 16px 0 0; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); max-height: 80vh; overflow-y: auto; }
+  .sheet { position: fixed; top: auto; bottom: 0; left: 0; margin: 0; width: 100%; max-width: none; border-radius: 16px 16px 0 0; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; }
   .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .sheet-title { font-size: .8rem; color: var(--muted); margin: 10px 0 4px; }
   .sheet-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
@@ -287,3 +287,40 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
 .incomebar .quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .chartgrid { display: grid; gap: 14px 24px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
 @media print { .donut-svg { width: 130px; height: 130px; } .incomebar { display: none; } }
+
+/* 倒數計時、本週底色、最近一筆加粗、自訂活動 */
+.cdgrid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 10px 0 14px; }
+.card.cd { padding: 12px 14px; }
+.card.cd .l { font-size: .82rem; color: var(--muted); }
+.card.cd .cd-big { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; margin: 2px 0; color: var(--accent); }
+.card.cd.soon .cd-big { color: var(--neg); }
+.card.cd .cd-main { font-size: .95rem; }
+:root { --week-bg: #e8f5ec; }
+:root[data-theme="dark"] { --week-bg: #1b3326; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --week-bg: #1b3326; } }
+tr.week td, tr.week { background: var(--week-bg); }
+tr.today td, tr.today { background: var(--today-bg); }
+tr.nextev td { font-weight: 700; }
+tr.nextev td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+button.linklike { background: none; border: 0; padding: 2px 4px; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; min-height: 0; }
+.evform summary { cursor: pointer; font-weight: 600; }
+.evform .formgrid { margin: 10px 0; }
+.formgrid.names { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+@media print { tr.week td, tr.week { background: #eef7f0; } .evform { display: none; } }
+
+/* 類別篩選標籤、複選框對齊、可拖曳高度的底部面板 */
+input[type=checkbox], input[type=radio] { min-height: 0; width: 18px; height: 18px; padding: 0; margin: 0; accent-color: var(--accent); flex: 0 0 auto; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); cursor: pointer; line-height: 1.2; user-select: none; }
+.chip:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row.actions { margin-top: 6px; }
+.sheet-grip { display: none; }
+.sheet-update { width: 100%; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; background: none; color: var(--accent); font-weight: 600; cursor: pointer; }
+@media (max-width: 860px) {
+  .sheet { max-height: 92vh; min-height: 160px; }
+  .sheet.resizing { transition: none; user-select: none; }
+  .sheet-grip { display: flex; justify-content: center; align-items: center; height: 28px; margin: -14px 0 0; cursor: ns-resize; touch-action: none; position: sticky; top: -14px; background: var(--panel); z-index: 1; }
+  .sheet-grip span { width: 44px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .6; }
+  .sheet-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+}

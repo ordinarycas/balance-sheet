@@ -1,7 +1,7 @@
 // Service Worker：讓網站安裝後可離線使用。只處理「同源 GET」；行情／匯率等跨網域請求完全不經過這裡。
 // 下方 PRECACHE 區塊由 `npm run gen:sw` 產生（含內容雜湊的版本號）；tests/pwa.test.js 會檢查它是否過期。
 // === PRECACHE:BEGIN ===
-const VERSION = 'pfs-bf3ecad963';
+const VERSION = 'pfs-f6bcd08937';
 const PRECACHE = [
   "./",
   "./css/style.css",
@@ -13,6 +13,7 @@ const PRECACHE = [
   "./js/core/build.js",
   "./js/core/calendar.js",
   "./js/core/constants.js",
+  "./js/core/countdown.js",
   "./js/core/daily.js",
   "./js/core/dates.js",
   "./js/core/decimal.js",
@@ -47,6 +48,7 @@ const PRECACHE = [
   "./js/ui/components/charts/d3.js",
   "./js/ui/components/charts/loader.js",
   "./js/ui/components/charts/lw.js",
+  "./js/ui/components/countdown.js",
   "./js/ui/components/donut.js",
   "./js/ui/components/forms.js",
   "./js/ui/components/table.js",
@@ -69,6 +71,7 @@ const PRECACHE = [
   "./js/ui/pages/schedule.js",
   "./js/ui/pages/settings.js",
   "./js/ui/reminder.js",
+  "./js/ui/update.js",
   "./manifest.webmanifest",
   "./schema/finance-v1.schema.json",
   "./vendor/decimal.mjs",
@@ -122,6 +125,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (url.searchParams.has('check')) return; // 「檢查更新」直接走網路，不讀也不寫快取
 
   // 頁面導覽：優先走網路（拿到最新版），離線時退回快取的外殼
   if (req.mode === 'navigate') {

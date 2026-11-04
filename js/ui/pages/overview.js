@@ -6,6 +6,7 @@ import { lineChart, legend } from '../components/chart.js';
 import { button } from '../components/forms.js';
 import { demoState } from '../../data/demo.js';
 import { hasData } from '../../data/store.js';
+import { countdownCards } from '../components/countdown.js';
 
 function onboarding(app) {
   return h('div', { class: 'card' },
@@ -25,6 +26,7 @@ export default function render(app) {
     h('h1', { text: '總覽' }),
     h('p', { class: 'sub', text: `基準日 ${app.asOf}；金額單位 NT$（美元借款以 ${app.usdTwd.toFixed(4)} 折算）` }));
   if (!hasData()) root.appendChild(onboarding(app));
+  else root.appendChild(countdownCards(app));
 
   // 負債表
   const rows = [

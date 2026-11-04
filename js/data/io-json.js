@@ -16,7 +16,7 @@ export function toExportObject(state, now = new Date()) {
   const o = {
     schemaVersion: SCHEMA_VERSION,
     meta: { app: APP_ID, appVersion: APP_VERSION, exportedAt: nowTaipeiISO(now) },
-    settings: pick(state.settings, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart']),
+    settings: pick(state.settings, ['asOfDate', 'dayCountLoan', 'dayCountPledge', 'usdTwdManual', 'monthStart', 'payDay']),
     loans: state.loans.map((l) => {
       const x = pick(l, LOAN_KEYS);
       if (l.kind === 'interest_only_annual') { delete x.calibration; delete x.rateChanges; delete x.prepayments; if (x.periods === null) delete x.periods; }
@@ -29,6 +29,7 @@ export function toExportObject(state, now = new Date()) {
     pledge: {
       borrowed: state.pledge.borrowed,
       interestDay: state.pledge.interestDay,
+      accountName: state.pledge.accountName ?? '',
       stocks: state.pledge.stocks.map((s) => pick(s, ['code', 'name', 'shares', 'manualPrice', 'ltv', 'annualRate'])),
     },
     holdings: state.holdings.map((s) => pick(s, ['code', 'name', 'shares', 'manualPrice'])),
@@ -48,6 +49,7 @@ export function toExportObject(state, now = new Date()) {
       electricity: sortKeys(state.home.electricity),
     },
     salary: { scenarios: state.salary.scenarios, otherLiving: state.salary.otherLiving },
+    events: (state.events ?? []).map((e) => pick(e, ['id', 'date', 'item', 'amount', 'note'])),
   };
   return o;
 }

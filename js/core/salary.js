@@ -11,7 +11,7 @@ import { feeActive } from './expenses.js';
 export function buildDebts(schedules, statuses, pledgeCalc) {
   const debts = [];
   if (pledgeCalc && pledgeCalc.borrowed > 0) {
-    debts.push({ id: 'pledge', name: '股票質押', type: 'pledge', rate: pledgeCalc.weightedRate, balance: pledgeCalc.borrowed, pmt: 0, order: -1 });
+    debts.push({ id: 'pledge', name: pledgeCalc.accountName || '股票質押', type: 'pledge', rate: pledgeCalc.weightedRate, balance: pledgeCalc.borrowed, pmt: 0, order: -1 });
   }
   schedules.forEach((s, i) => {
     const st = statuses[i];

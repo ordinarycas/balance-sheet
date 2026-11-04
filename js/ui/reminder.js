@@ -34,6 +34,15 @@ async function registerBackground() {
   try { await reg.periodicSync.register('pfs-remind', { minInterval: 12 * 3600 * 1000 }); return true; } catch { return false; }
 }
 
+/** 取消勾選＝完全關閉：停止背景檢查、刪除本機快照、關掉已顯示的通知、清除今日已通知記錄。 */
+export async function disable() {
+  await unregisterBackground();
+  const reg = await registration();
+  try { (await reg?.getNotifications?.() ?? []).filter((n) => String(n.tag).startsWith('pfs-due-')).forEach((n) => n.close()); } catch { /* 略過 */ }
+  setPref('remindNotifiedDay', '');
+  setPref('remindSeenDay', '');
+}
+
 export async function unregisterBackground() {
   const reg = await registration();
   try { await reg?.periodicSync?.unregister('pfs-remind'); } catch { /* 不支援即略過 */ }

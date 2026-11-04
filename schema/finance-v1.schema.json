@@ -3,59 +3,218 @@
   "title": "個人資產負債表 JSON 備份格式 v1",
   "description": "匯出檔只含輸入資料，不含計算結果與股價快取。實際驗證規則（V1–V15）以應用程式內的驗證器為準，此檔供編輯器提示與外部工具參考。",
   "type": "object",
-  "required": ["schemaVersion", "settings", "loans"],
+  "required": [
+    "schemaVersion",
+    "settings",
+    "loans"
+  ],
   "properties": {
-    "schemaVersion": { "enum": [1, 2], "description": "目前為 2；1 會在匯入時自動遷移（補上空的 rateChanges／prepayments）" },
+    "schemaVersion": {
+      "enum": [
+        1,
+        2
+      ],
+      "description": "目前為 2；1 會在匯入時自動遷移（補上空的 rateChanges／prepayments）"
+    },
     "meta": {
       "type": "object",
       "properties": {
-        "app": { "const": "personal-finance-static" },
-        "appVersion": { "type": "string" },
-        "exportedAt": { "type": "string", "format": "date-time" }
+        "app": {
+          "const": "personal-finance-static"
+        },
+        "appVersion": {
+          "type": "string"
+        },
+        "exportedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "settings": {
       "type": "object",
       "properties": {
-        "asOfDate": { "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
-        "dayCountLoan": { "type": "integer", "minimum": 1, "maximum": 366 },
-        "dayCountPledge": { "type": "integer", "minimum": 1, "maximum": 366 },
-        "usdTwdManual": { "type": "number", "exclusiveMinimum": 0 },
-        "monthStart": { "oneOf": [{ "$ref": "#/$defs/month" }, { "type": "null" }] }
+        "asOfDate": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dayCountLoan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 366
+        },
+        "dayCountPledge": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 366
+        },
+        "usdTwdManual": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "monthStart": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/month"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "payDay": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31,
+          "description": "每月發薪日（倒數計時用）"
+        }
       }
     },
     "loans": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "name", "kind", "principal", "annualRate", "startDate", "firstDueDate"],
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "principal",
+          "annualRate",
+          "startDate",
+          "firstDueDate"
+        ],
         "properties": {
-          "id": { "type": "string", "maxLength": 40 },
-          "name": { "type": "string", "maxLength": 200 },
-          "kind": { "enum": ["amortizing", "interest_only_annual"] },
-          "currency": { "enum": ["TWD", "USD"] },
-          "principal": { "type": "number", "minimum": 0 },
-          "annualRate": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 },
-          "periods": { "type": ["integer", "null"], "minimum": 1 },
-          "startDate": { "$ref": "#/$defs/date" },
-          "firstDueDate": { "$ref": "#/$defs/date" },
-          "dueRule": { "type": "string", "pattern": "^(EOM|YEARLY|DAY_([1-9]|[12][0-9]|3[01]))$" },
-          "decimals": { "type": "integer", "minimum": 0, "maximum": 6 },
+          "id": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "kind": {
+            "enum": [
+              "amortizing",
+              "interest_only_annual"
+            ]
+          },
+          "currency": {
+            "enum": [
+              "TWD",
+              "USD"
+            ]
+          },
+          "principal": {
+            "type": "number",
+            "minimum": 0
+          },
+          "annualRate": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": 1
+          },
+          "periods": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "startDate": {
+            "$ref": "#/$defs/date"
+          },
+          "firstDueDate": {
+            "$ref": "#/$defs/date"
+          },
+          "dueRule": {
+            "type": "string",
+            "pattern": "^(EOM|YEARLY|DAY_([1-9]|[12][0-9]|3[01]))$"
+          },
+          "decimals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          },
           "calibration": {
             "oneOf": [
-              { "type": "null" },
-              { "type": "object", "required": ["date", "balance"], "properties": { "date": { "$ref": "#/$defs/date" }, "balance": { "type": "number", "minimum": 0 } } }
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "required": [
+                  "date",
+                  "balance"
+                ],
+                "properties": {
+                  "date": {
+                    "$ref": "#/$defs/date"
+                  },
+                  "balance": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
             ]
           },
           "rateChanges": {
             "description": "v2：利率變動，新利率自該日（含）起適用（只適用攤還型）",
-            "type": "array", "maxItems": 60,
-            "items": { "type": "object", "required": ["date", "annualRate"], "properties": { "date": { "$ref": "#/$defs/date" }, "annualRate": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 } } }
+            "type": "array",
+            "maxItems": 60,
+            "items": {
+              "type": "object",
+              "required": [
+                "date",
+                "annualRate"
+              ],
+              "properties": {
+                "date": {
+                  "$ref": "#/$defs/date"
+                },
+                "annualRate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMaximum": 1
+                }
+              }
+            }
           },
           "prepayments": {
             "description": "v2：提前還款，日期須為某一期繳款日；shorten＝縮短年限（月付金不變）、reduce＝縮小月付金（期數不變）",
-            "type": "array", "maxItems": 100,
-            "items": { "type": "object", "required": ["date", "amount"], "properties": { "date": { "$ref": "#/$defs/date" }, "amount": { "type": "number", "exclusiveMinimum": 0 }, "mode": { "enum": ["shorten", "reduce"] } } }
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": [
+                "date",
+                "amount"
+              ],
+              "properties": {
+                "date": {
+                  "$ref": "#/$defs/date"
+                },
+                "amount": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "mode": {
+                  "enum": [
+                    "shorten",
+                    "reduce"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -63,19 +222,57 @@
     "pledge": {
       "type": "object",
       "properties": {
-        "borrowed": { "type": "number" },
-        "interestDay": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
+        "borrowed": {
+          "type": "number"
+        },
+        "interestDay": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31
+        },
         "stocks": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["code", "shares"],
+            "required": [
+              "code",
+              "shares"
+            ],
             "properties": {
-              "code": { "type": "string" }, "name": { "type": "string" },
-              "shares": { "type": "integer", "minimum": 0 }, "manualPrice": { "type": "number", "minimum": 0 },
-              "ltv": { "type": "number", "minimum": 0, "maximum": 1 }, "annualRate": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 }
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "shares": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manualPrice": {
+                "type": "number",
+                "minimum": 0
+              },
+              "ltv": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "annualRate": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": 1
+              }
             }
           }
+        },
+        "accountName": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "股票質押帳戶的顯示名稱"
         }
       }
     },
@@ -83,44 +280,277 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["code", "shares"],
-        "properties": { "code": { "type": "string" }, "name": { "type": "string" }, "shares": { "type": "integer", "minimum": 0 }, "manualPrice": { "type": "number", "minimum": 0 } }
+        "required": [
+          "code",
+          "shares"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shares": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "manualPrice": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
       }
     },
     "realizedPnl": {
       "type": "array",
-      "items": { "type": "object", "required": ["month"], "properties": { "month": { "$ref": "#/$defs/month" }, "personal": { "type": "number" }, "father": { "type": "number" }, "mother": { "type": "number" } } }
+      "items": {
+        "type": "object",
+        "required": [
+          "month"
+        ],
+        "properties": {
+          "month": {
+            "$ref": "#/$defs/month"
+          },
+          "personal": {
+            "type": "number"
+          },
+          "father": {
+            "type": "number"
+          },
+          "mother": {
+            "type": "number"
+          }
+        }
+      }
     },
     "cards": {
       "type": "object",
       "properties": {
-        "payDay": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 31 } },
-        "statementDay": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 31 } },
-        "names": { "type": "object", "additionalProperties": { "type": "string" } },
-        "entries": { "type": "array", "items": { "type": "object", "required": ["month", "card", "amount"], "properties": { "month": { "$ref": "#/$defs/month" }, "card": { "type": "string" }, "item": { "type": "string" }, "amount": { "type": "number" } } } },
-        "fixedFees": { "type": "array", "items": { "type": "object", "required": ["item", "card", "amount", "start"], "properties": { "item": { "type": "string" }, "card": { "type": "string" }, "amount": { "type": "number" }, "start": { "$ref": "#/$defs/month" }, "end": { "oneOf": [{ "$ref": "#/$defs/month" }, { "type": "null" }] }, "cycle": { "enum": ["monthly", "yearly"] } } } }
+        "payDay": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          }
+        },
+        "statementDay": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          }
+        },
+        "names": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "month",
+              "card",
+              "amount"
+            ],
+            "properties": {
+              "month": {
+                "$ref": "#/$defs/month"
+              },
+              "card": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "fixedFees": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "item",
+              "card",
+              "amount",
+              "start"
+            ],
+            "properties": {
+              "item": {
+                "type": "string"
+              },
+              "card": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "start": {
+                "$ref": "#/$defs/month"
+              },
+              "end": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/month"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cycle": {
+                "enum": [
+                  "monthly",
+                  "yearly"
+                ]
+              }
+            }
+          }
+        }
       }
     },
     "rent": {
       "type": "object",
-      "properties": { "monthlyRent": { "type": "number" }, "dueDay": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 }, "electricity": { "type": "object", "additionalProperties": { "type": "number" } } }
+      "properties": {
+        "monthlyRent": {
+          "type": "number"
+        },
+        "dueDay": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "electricity": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        }
+      }
     },
     "home": {
       "type": "object",
       "properties": {
-        "internetFee": { "type": "number" }, "internetDay": { "type": ["integer", "null"], "minimum": 1, "maximum": 31 },
-        "water": { "type": "object", "additionalProperties": { "$ref": "#/$defs/bill" } },
-        "electricity": { "type": "object", "additionalProperties": { "$ref": "#/$defs/bill" } }
+        "internetFee": {
+          "type": "number"
+        },
+        "internetDay": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1,
+          "maximum": 31
+        },
+        "water": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/bill"
+          }
+        },
+        "electricity": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/bill"
+          }
+        }
       }
     },
     "salary": {
       "type": "object",
-      "properties": { "scenarios": { "type": "array", "items": { "type": "number", "minimum": 0 }, "maxItems": 8 }, "otherLiving": { "type": "number" } }
+      "properties": {
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "maxItems": 8
+        },
+        "otherLiving": {
+          "type": "number"
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "description": "使用者自訂的單筆行事曆活動",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "date",
+          "item"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "date": {
+            "$ref": "#/$defs/date"
+          },
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "amount": {
+            "type": "number",
+            "description": "負數＝應繳費用，正數＝收入，0＝無金額"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
     }
   },
   "$defs": {
-    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-    "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
-    "bill": { "type": "object", "required": ["amount"], "properties": { "amount": { "type": "number" }, "date": { "oneOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] } } }
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "month": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}$"
+    },
+    "bill": {
+      "type": "object",
+      "required": [
+        "amount"
+      ],
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "date": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
   }
 }
