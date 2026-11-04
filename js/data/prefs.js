@@ -29,6 +29,7 @@ export const DEFAULT_PREFS = {
   lifeUseBS: false,        // 是否代入資產負債
   clockPop: true,          // 時鐘頁：秒針旁浮出每秒利息
   clockSound: false,       // 時鐘頁：秒針滴答聲（預設關閉）
+  clockGyro: false,        // 時鐘頁：利息隨手機傾斜（陀螺儀），預設關閉
   clockCap: 30,            // 時鐘頁：利息堆積上限 0–100（0＝不堆積）
   remindTomorrow: false,   // 明天有應繳項目時提醒（橫幅＋系統通知）
   remindNotifiedDay: '',   // 最近一次送出系統通知的日期（每天一次）
@@ -61,6 +62,7 @@ export function getPrefs() {
   if (!Number.isFinite(p.bufferCash) || p.bufferCash < 0) p.bufferCash = 0;
   if (!Number.isFinite(p.bufferTargetMonths) || p.bufferTargetMonths < 1 || p.bufferTargetMonths > 36) p.bufferTargetMonths = 6;
   p.extraIncomeLog = (Array.isArray(p.extraIncomeLog) ? p.extraIncomeLog : []).filter((e) => e && typeof e.id === 'string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(e.date) && Number.isFinite(e.amount) && e.amount > 0 && Number.isFinite(e.pct) && e.pct >= 0 && e.pct <= 100).slice(0, 200);
+  p.clockGyro = p.clockGyro === true;
   p.clockCap = Number.isFinite(p.clockCap) ? Math.min(Math.max(Math.round(p.clockCap), 0), 100) : 30;
   if (!Number.isFinite(p.chartIncome) || p.chartIncome < 0) p.chartIncome = 0;
   cache = p;

@@ -8,6 +8,9 @@ export const LINKS = [
 
 /** 基本工資（勞動部公告，2026-01-01 起）。 */
 export const MIN_WAGE = { year: 2026, monthly: 29500, hourly: 196 };
+/** 2027 年（民國 116 年）：審議會決議，尚待行政院核定，核定前以現行為準。 */
+export const MIN_WAGE_NEXT = { year: 2027, monthly: 30900, hourly: 205 };
+export const MIN_WAGE_SOURCE = { name: '勞動部公告：基本工資', url: 'https://www.mol.gov.tw/1607/1632/1633/99195/post' };
 
 export const DISCLAIMER = '以下條件與薪資是依一般市場情況整理的概略估計（新台幣、稅前），不是官方統計，也不保證；實際會因地區、公司、班別、經驗與景氣而不同，請以職缺公告與主管機關規定為準。';
 

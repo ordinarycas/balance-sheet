@@ -11,14 +11,17 @@ export function dueOn(events, date) {
 export function tomorrowOf(today) { return iso(dn(today) + 1); }
 
 /** 通知標題與內文；項目多時只列前 5 筆。 */
-export function describeDue(list) {
+export const TONE_NOTE = '——提前知道，就能從容安排';
+
+/** @param {'neutral'|'encourage'} [tone] 語氣：預設中性；鼓勵版只在標題尾端加一句平和的話，不含責備或催促。 */
+export function describeDue(list, tone = 'neutral') {
   const total = list.reduce((a, e) => a + Math.abs(e.amount), 0);
   const lines = list.slice(0, 5).map((e) => (e.amount ? `${e.item}　NT$${money(e.amount)}` : e.item));
   if (list.length > 5) lines.push(`…另有 ${list.length - 5} 筆`);
   const title = list.some((e) => e.custom && e.amount >= 0)
     ? `明天有 ${list.length} 項行程，應繳合計 NT$${money(list.filter((e) => e.amount < 0).reduce((x, e) => x + e.amount, 0))}`
     : `明天要繳 ${list.length} 筆，合計 NT$${money(total)}`;
-  return { title, body: lines.join('\n') };
+  return { title: tone === 'encourage' ? title + TONE_NOTE : title, body: lines.join('\n') };
 }
 
 /** 給 Service Worker 背景檢查用的精簡快照：只含接下來 14 天的日期、項目與金額。 */

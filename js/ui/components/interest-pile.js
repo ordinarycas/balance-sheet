@@ -5,7 +5,7 @@
 //  - 台北時間換日就清空；堆的內容（只有數字）存在本機，重新開啟同一天會接續。
 // 所有合併／淘汰的數字規則在 core/pile.js（可單元測試）；這裡只負責物理與畫面。
 import { h } from '../dom.js';
-import { Pile, bubbleRadius } from '../../core/pile.js';
+import { Pile, pillSize } from '../../core/pile.js';
 import { loadScript } from './charts/loader.js';
 import { safeGet, safeSet } from '../../data/storage.js';
 
@@ -33,7 +33,6 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
   const H = sr.height;
   const rel = (el) => { const r = el.getBoundingClientRect(); return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height }; };
   const d = rel(dial);
-  const g = rel(digital);
   const cx = d.x + d.w / 2;
   const cy = d.y + d.h / 2;
   const R = (d.w / 2) * 0.96;
@@ -44,31 +43,39 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
   const world = engine.world;
   const wall = { isStatic: true, friction: 0.2 };
   Composite.add(world, [
-    Bodies.rectangle(W / 2, H + 30, W + 200, 60, wall),                 // 地板
-    Bodies.rectangle(-30, H - 1500, 60, 3400, wall),                    // 左牆
-    Bodies.rectangle(W + 30, H - 1500, 60, 3400, wall),                 // 右牆
-    Bodies.circle(cx, cy, R, { isStatic: true, friction: 0.05 }),       // 圓形時鐘：氣泡會沿著鐘面滑下去
-    Bodies.rectangle(g.x + g.w / 2, g.y + g.h / 2, Math.min(g.w, 230), g.h * 0.9, { isStatic: true, chamfer: { radius: 8 } }), // 數位時間
-  ]);
+    Bodies.rectangle(W / 2, H + 30, W + 200, 60, wall),   // 地板
+    Bodies.rectangle(-30, H - 1500, 60, 3400, wall),      // 左牆
+    Bodies.rectangle(W + 30, H - 1500, 60, 3400, wall),   // 右牆
+    Bodies.rectangle(W / 2, -1600, W + 200, 60, wall),    // 天花板（傾斜手機時利息不會飛出去）
+  ]); // 時鐘與數位時間不是障礙物：利息會穿過它們落到地上
 
   /** @type {Map<number, {body:any, el:HTMLElement, r:number}>} */
   const live = new Map();
   const queue = [];
   let disposed = false;
 
-  const place = (b) => { b.el.style.transform = `translate(${(b.body.position.x - b.r).toFixed(1)}px,${(b.body.position.y - b.r).toFixed(1)}px)`; };
-  const size = (b, r) => { b.r = r; b.el.style.width = `${2 * r}px`; b.el.style.height = `${2 * r}px`; };
+  const place = (b) => { b.el.style.transform = `translate(${(b.body.position.x - b.w / 2).toFixed(1)}px,${(b.body.position.y - b.h / 2).toFixed(1)}px) rotate(${b.body.angle.toFixed(3)}rad)`; };
+  const size = (b, item) => {
+    const d = pillSize(item.count, fmt(item.value));
+    b.w = d.w; b.h = d.h;
+    b.el.style.width = `${d.w}px`; b.el.style.height = `${d.h}px`; b.el.style.fontSize = `${d.font}px`;
+  };
   const save = () => { safeSet(KEY, JSON.stringify({ day, values: pile.toValues() })); onChange?.(pile); };
   const pulse = (b) => { b.el.classList.remove('merge'); void b.el.offsetWidth; b.el.classList.add('merge'); };
+  const pillBody = (item, x, y) => {
+    const d = pillSize(item.count, fmt(item.value));
+    const body = Bodies.rectangle(x, y, d.w, d.h, { chamfer: { radius: d.h / 2 }, restitution: 0.2, friction: 0.12, frictionAir: 0.012, density: 0.002, label: 'bubble' });
+    body.plugin = { id: item.id };
+    return body;
+  };
 
   function makeBubble(item, x, y, vx, vy) {
-    const r = bubbleRadius(item.count);
-    const body = Bodies.circle(x, y, r, { restitution: 0.25, friction: 0.08, frictionAir: 0.012, density: 0.002, label: 'bubble' });
-    body.plugin = { id: item.id };
+    const body = pillBody(item, x, y);
     Body.setVelocity(body, { x: vx, y: vy });
+    Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
     const el = h('span', { class: 'clk-bub', text: fmt(item.value) });
-    const b = { body, el, r };
-    size(b, r);
+    const b = { body, el, w: 0, h: 0 };
+    size(b, item);
     place(b);
     layer.appendChild(el);
     Composite.add(world, body);
@@ -83,15 +90,24 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
     Composite.remove(world, b.body);
     b.el.classList.add('fade');
     if (toward) { // 縮進去並往保留的那顆靠攏（合併動畫）
-      b.el.style.transform = `translate(${(toward.body.position.x - b.r).toFixed(1)}px,${(toward.body.position.y - b.r).toFixed(1)}px) scale(.3)`;
+      b.el.style.transform = `translate(${(toward.body.position.x - b.w / 2).toFixed(1)}px,${(toward.body.position.y - b.h / 2).toFixed(1)}px) scale(.3)`;
     }
     setTimeout(() => b.el.remove(), 320);
   }
 
   function grow(b, item) {
-    const r = bubbleRadius(item.count);
-    if (Math.abs(r - b.r) > 0.01) { Body.scale(b.body, r / b.r, r / b.r); Sleeping.set(b.body, false); size(b, r); }
+    const d = pillSize(item.count, fmt(item.value));
     b.el.textContent = fmt(item.value);
+    if (d.w !== b.w || d.h !== b.h) { // 尺寸改變：以新尺寸的膠囊取代，保留位置、速度與角度
+      const old = b.body;
+      const nb = pillBody(item, old.position.x, old.position.y);
+      Body.setAngle(nb, old.angle);
+      Body.setVelocity(nb, old.velocity);
+      Composite.remove(world, old);
+      Composite.add(world, nb);
+      b.body = nb;
+      size(b, item);
+    }
     pulse(b);
   }
 
@@ -100,10 +116,8 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
     if (disposed) return;
     const { item, evicted } = pile.add(value);
     const a = (angleDeg * Math.PI) / 180;
-    const r = bubbleRadius(item.count);
-    const rim = R + r + 3;
-    const jitter = (Math.random() - 0.5) * 1.2;
-    const b = makeBubble(item, cx + rim * Math.sin(a), cy - rim * Math.cos(a), 2.2 * Math.sin(a) + jitter, -2.2 * Math.cos(a));
+    const tip = R * 0.72; // 從秒針尖端附近冒出
+    const b = makeBubble(item, cx + tip * Math.sin(a), cy - tip * Math.cos(a), 1.6 * Math.sin(a) + (Math.random() - 0.5) * 0.8, -1.6 * Math.cos(a) - 0.6);
     if (evicted) { fadeOut(evicted.id, b); grow(b, item); }
     save();
   }
@@ -155,6 +169,13 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
     for (const b of live.values()) place(b);
   }
 
+  /** 依手機傾斜改變重力方向（gx、gy 各在 -1 到 1）；會喚醒睡著的物體。 */
+  function setGravity(gx, gy) {
+    engine.gravity.x = Math.max(-1, Math.min(1, gx));
+    engine.gravity.y = Math.max(-1, Math.min(1, gy));
+    for (const b of live.values()) Sleeping.set(b.body, false);
+  }
+
   function dispose() {
     disposed = true;
     Events.off(engine);
@@ -165,5 +186,5 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
   }
 
   restore();
-  return { pile, spawn, step, reset, dispose, get day() { return day; } };
+  return { pile, spawn, step, reset, setGravity, dispose, get day() { return day; } };
 }

@@ -10,7 +10,8 @@ const pctText = (v, total) => `${((v / total) * 100).toFixed(1)}%`;
 function legendList(data, total) {
   return h('ul', { class: 'donut-list' }, data.map((s, i) => h('li', null,
     h('i', { class: `sw sw${s.idx ?? i % 8}` }), h('span', { class: 'dl', text: s.label }),
-    h('span', { class: 'dv', text: `${twd(s.value)}　${pctText(s.value, total)}` }))));
+    h('span', { class: 'dv', text: `${twd(s.value)}　${pctText(s.value, total)}` }))),
+    h('li', { class: 'total' }, h('span', { class: 'dl', text: '合計' }), h('span', { class: 'dv', text: `${twd(total)}　100%` })));
 }
 
 /** @param {{title:string, slices:Array<{label:string,value:number}>, center?:string}} o */

@@ -55,7 +55,7 @@ export default function render(app) {
   const root = h('div', null,
     h('h1', { text: '時鐘' }),
     h('p', { class: 'sub', text: '台北時間。秒針每走一秒，就會跳出這一秒累積的利息，讓你看見「時間本身」的成本；它不是要你每秒付錢。' }),
-    h('div', { class: 'clk-wrap' }, stage));
+    h('div', { class: 'clk-wrap' }, stage, pileInfo));
 
   // ---- 控制項（改設定會重新繪製此頁，堆在地上的利息會接續）----
   const popBox = h('input', { type: 'checkbox', checked: popOn, 'aria-label': '顯示每秒浮動的利息' });
@@ -72,12 +72,21 @@ export default function render(app) {
     if (!Number.isFinite(v) || v < 0 || v > 100) { capIn.value = app.prefs.clockCap; app.toast('請輸入 0 到 100 的整數'); return; }
     app.setPref('clockCap', v);
   });
+  const gyroSupported = typeof window.DeviceOrientationEvent !== 'undefined';
+  const gyroBox = h('input', { type: 'checkbox', checked: !!app.prefs.clockGyro, 'aria-label': '利息隨手機傾斜（陀螺儀）' });
+  gyroBox.disabled = !gyroSupported;
+  gyroBox.addEventListener('change', async () => {
+    if (gyroBox.checked && typeof window.DeviceOrientationEvent?.requestPermission === 'function') { // iOS 需在使用者操作中授權
+      try { if ((await window.DeviceOrientationEvent.requestPermission()) !== 'granted') { gyroBox.checked = false; app.toast('未取得動態感測器權限'); return; } } catch { gyroBox.checked = false; return; }
+    }
+    app.setPref('clockGyro', gyroBox.checked);
+  });
   root.appendChild(h('div', { class: 'card no-print clk-controls' },
     h('label', { class: 'row clk-toggle' }, popBox, h('span', { text: '秒針旁顯示每秒浮動的利息' })),
     h('label', { class: 'row clk-toggle' }, soundBox, h('span', { text: soundSupported() ? '秒針滴答聲（純 JS 合成，預設關閉）' : '秒針滴答聲（此瀏覽器不支援）' })),
+    h('label', { class: 'row clk-toggle' }, gyroBox, h('span', { text: gyroSupported ? '利息隨手機傾斜（陀螺儀，預設關閉；資料只在本機處理）' : '利息隨手機傾斜（此裝置不支援）' })),
     h('label', { class: 'row clk-toggle' }, capIn, h('span', { text: '堆積上限（0–100 顆；0＝不堆積，浮出後淡出）' })),
     h('p', { class: 'note', text: '跳出的利息會落到地上慢慢堆起來，台北時間每天重新開始。超過上限時，最舊的一顆淡出並把數字加到最新的一顆；已達上限時，兩顆碰撞就合併成一顆、數字相加。沒有開啟「減少動態效果」的裝置才會有堆積動畫。' })));
-  root.appendChild(pileInfo);
 
   const accrued = rollingNumber(fmt5(0), { animate: !reduce });
 
@@ -128,12 +137,22 @@ export default function render(app) {
     initializing = true;
     try {
       pile = await createInterestPile({ stage, layer, dial, digital, cap, day, onChange: showPile });
-      if (!stage.isConnected) { pile.dispose(); pile = null; }
+      if (!stage.isConnected) { pile.dispose(); pile = null; } else applyGyro();
     } catch (e) {
       pileFailed = true;
       console.warn('利息堆（物理引擎）載入失敗，改用單純浮出', e);
       pileInfo.textContent = '物理引擎無法載入（可能離線且尚未快取），改用單純浮出。';
     } finally { initializing = false; }
+  }
+  // 陀螺儀：直拿手機時重力朝下；左右傾斜時朝傾斜方向；平放時重力變弱
+  const onTilt = (e) => {
+    if (!pile || e.beta == null || e.gamma == null) return;
+    const rad = Math.PI / 180;
+    pile.setGravity(Math.sin(e.gamma * rad), Math.max(0.15, Math.sin(e.beta * rad)));
+  };
+  function applyGyro() {
+    window.removeEventListener('deviceorientation', onTilt);
+    if (app.prefs.clockGyro && gyroSupported && pile) window.addEventListener('deviceorientation', onTilt);
   }
   const onResize = () => {
     clearTimeout(resizeT);
@@ -156,7 +175,7 @@ export default function render(app) {
   };
 
   const frame = (ts) => {
-    if (!clock.isConnected) { pile?.dispose(); pile = null; return; }
+    if (!clock.isConnected) { window.removeEventListener('deviceorientation', onTilt); pile?.dispose(); pile = null; return; }
     const dt = ts - lastTs;
     lastTs = ts;
     const c = taipeiClock(Date.now());
@@ -167,8 +186,8 @@ export default function render(app) {
     secHand.setAttribute('transform', `rotate(${ang.second.toFixed(2)} 100 100)`);
     if (!pile) initPile();
     pile?.step(dt);
-    // 累積利息：最多每 250 毫秒換一次字，讓「換數字」的動畫看得清楚
-    if (it.daily > 0 && (ts - lastAcc > 250 || secInt !== lastSec)) {
+    // 累積利息：每 100 毫秒更新一次，各位數字各自平順滾動
+    if (it.daily > 0 && (ts - lastAcc > 100 || secInt !== lastSec)) {
       lastAcc = ts;
       accrued.set(fmt5(accruedToday(it.daily, c.secOfDay)));
     }

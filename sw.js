@@ -1,7 +1,7 @@
 // Service Worker：讓網站安裝後可離線使用。只處理「同源 GET」；行情／匯率等跨網域請求完全不經過這裡。
 // 下方 PRECACHE 區塊由 `npm run gen:sw` 產生（含內容雜湊的版本號）；tests/pwa.test.js 會檢查它是否過期。
 // === PRECACHE:BEGIN ===
-const VERSION = 'pfs-27c3b84582';
+const VERSION = 'pfs-03247d9fcc';
 const PRECACHE = [
   "./",
   "./css/style.css",
@@ -116,7 +116,7 @@ async function remindIfDue() {
   const c = await caches.open(REMIND_CACHE);
   const res = await c.match('./__reminders.json');
   if (!res) return;
-  const { items } = await res.json();
+  const { items, tone } = await res.json();
   const tomorrow = new Date(Date.now() + 8 * 3600e3 + 24 * 3600e3).toISOString().slice(0, 10);
   const due = (items || []).filter((x) => x.date === tomorrow);
   if (!due.length) return;
@@ -126,7 +126,7 @@ async function remindIfDue() {
   const money = (n) => Math.abs(Math.round(n)).toLocaleString('en-US');
   const lines = due.slice(0, 5).map((x) => x.item + '　NT$' + money(x.amount));
   if (due.length > 5) lines.push('…另有 ' + (due.length - 5) + ' 筆');
-  await self.registration.showNotification('明天要繳 ' + due.length + ' 筆，合計 NT$' + money(total), { body: lines.join('\n'), tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'zh-Hant' });
+  await self.registration.showNotification('明天要繳 ' + due.length + ' 筆，合計 NT$' + money(total) + (tone === 'encourage' ? '——提前知道，就能從容安排' : ''), { body: lines.join('\n'), tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'zh-Hant' });
 }
 self.addEventListener('periodicsync', (e) => { if (e.tag === 'pfs-remind') e.waitUntil(remindIfDue().catch(() => {})); });
 self.addEventListener('notificationclick', (e) => {

@@ -75,3 +75,11 @@ export class Pile {
 export function bubbleRadius(count) {
   return Math.min(36, 20 + 4 * Math.log2(Math.max(count, 1)));
 }
+
+/** 膠囊（圓角矩形）尺寸：高度隨合併數增加（22→34px），寬度隨文字長度；回傳字級。 */
+export function pillSize(count, text) {
+  const h = Math.min(34, 22 + 3 * Math.log2(Math.max(count, 1)));
+  const font = 10 * (h / 22);
+  const w = Math.max(h * 1.9, 14 + String(text).length * 0.62 * font);
+  return { w: Math.round(w), h: Math.round(h), font: Math.round(font * 10) / 10 };
+}

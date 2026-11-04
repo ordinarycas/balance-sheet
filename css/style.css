@@ -314,7 +314,7 @@ input[type=checkbox], input[type=radio] { min-height: 0; width: 18px; height: 18
 .chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 .row.actions { margin-top: 6px; }
 .sheet-grip { display: none; }
-.sheet-update { width: 100%; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; background: none; color: var(--accent); font-weight: 600; cursor: pointer; }
+.sheet-update { margin-top: 16px; width: 100%; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; background: none; color: var(--accent); font-weight: 600; cursor: pointer; }
 @media (max-width: 860px) {
   .sheet { max-height: 92vh; min-height: 160px; }
   .sheet.resizing { transition: none; user-select: none; }
@@ -373,7 +373,7 @@ input[type=checkbox], input[type=radio] { min-height: 0; width: 18px; height: 18
 .ar-table { margin-top: 8px; }
 .ar-table summary { cursor: pointer; color: var(--accent); }
 table.heat { border-collapse: separate; border-spacing: 2px; width: 100%; }
-table.heat th.hm-row { text-align: left; white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: var(--panel); z-index: 1; padding-right: 10px; }
+table.heat th.hm-row { text-align: left; white-space: nowrap; font-weight: 500; padding-right: 10px; }
 table.heat td.hm { text-align: center; min-width: 44px; border-radius: 4px; color: var(--ink); font-size: .8rem; }
 table.heat td.hm0 { color: var(--muted); }
 table.heat td.hm1 { background: color-mix(in srgb, var(--c1) 10%, var(--panel)); }
@@ -402,22 +402,27 @@ table.dayheat td.hm-empty { background: none; }
 .clk-stage { position: relative; width: min(480px, 92vw); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .clk-stage .clk-dial { flex: 0 0 auto; }
 .clk-floor { display: none; }
-.clk-stage.piling .clk-floor { display: block; height: 190px; width: 100%; }
+.clk-stage.piling .clk-floor { display: block; height: 150px; width: 100%; }
 .clk-phys { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
-.clk-bub { position: absolute; left: 0; top: 0; display: grid; place-items: center; border-radius: 50%; box-sizing: border-box; background: color-mix(in srgb, var(--neg) 14%, var(--panel)); border: 1px solid var(--neg); color: var(--neg); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; will-change: transform; }
+.clk-bub { position: absolute; left: 0; top: 0; display: grid; place-items: center; border-radius: 999px; line-height: 1; box-sizing: border-box; background: color-mix(in srgb, var(--neg) 14%, var(--panel)); border: 1px solid var(--neg); color: var(--neg); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; will-change: transform; }
 .clk-bub.fade { opacity: 0; transition: transform .3s ease-in, opacity .3s ease-in; }
 .clk-bub.merge { animation: clk-merge .35s ease-out; }
 @keyframes clk-merge { 0% { box-shadow: 0 0 0 0 var(--neg); } 40% { box-shadow: 0 0 0 6px transparent; filter: brightness(1.15); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .clk-controls { max-width: 560px; margin: 8px auto; }
 .clk-controls .in { width: 5.5em; }
-.clk-pileinfo { text-align: center; min-height: 1.4em; }
-.rn { display: inline-flex; font-variant-numeric: tabular-nums; }
-.rn .rd { position: relative; display: inline-block; overflow: hidden; width: 1ch; height: 1.25em; line-height: 1.25em; vertical-align: bottom; }
-.rn .rs { display: inline-block; height: 1.25em; line-height: 1.25em; }
-.rn .rd .rv { position: absolute; left: 0; right: 0; top: 0; text-align: center; }
-.rn .rv.in { animation: rn-in .22s ease-out; }
-.rn .rv.out { animation: rn-out .22s ease-in forwards; }
-@keyframes rn-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-@keyframes rn-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
-@media (prefers-reduced-motion: reduce) { .rn .rv.in, .rn .rv.out, .clk-bub.merge { animation: none; } }
+.clk-pileinfo { text-align: center; margin: 4px 0; }
+.clk-pileinfo:empty { display: none; }
 table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
+
+/* 比例圖：手機版甜甜圈置中、清單最後一列為合計 */
+.donut-list li.total { font-weight: 700; border-top: 2px solid var(--line); border-bottom: 0; }
+.donut-list li.total .dv { color: var(--ink); }
+@media (max-width: 860px) { .donut-body { justify-content: center; } .donut-svg { margin: 0 auto; } }
+
+/* 里程表數字 */
+.rn { display: inline-flex; font-variant-numeric: tabular-nums; }
+.rn .rd { display: inline-block; overflow: hidden; width: 1ch; height: 1.25em; line-height: 1.25em; vertical-align: bottom; }
+.rn .col { display: block; transition: transform .11s linear; will-change: transform; }
+.rn .col span { display: block; height: 1.25em; line-height: 1.25em; text-align: center; }
+.rn .rs { display: inline-block; height: 1.25em; line-height: 1.25em; }
+@media (prefers-reduced-motion: reduce) { .rn .col { transition: none; } }

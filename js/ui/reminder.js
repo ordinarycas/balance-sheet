@@ -54,7 +54,7 @@ export async function syncSnapshot(app) {
   if (!app.prefs.remindTomorrow || !('caches' in window)) return;
   try {
     const c = await caches.open(SNAPSHOT_CACHE);
-    await c.put(SNAPSHOT_URL, new Response(JSON.stringify({ today: todayTaipei(), items: snapshot(app.model.calendar.events, todayTaipei()) }), { headers: { 'Content-Type': 'application/json' } }));
+    await c.put(SNAPSHOT_URL, new Response(JSON.stringify({ today: todayTaipei(), items: snapshot(app.model.calendar.events, todayTaipei()), tone: app.prefs.remindTone }), { headers: { 'Content-Type': 'application/json' } }));
   } catch { /* 私密模式等情況略過 */ }
 }
 
@@ -78,7 +78,7 @@ export async function runReminder(app) {
   const list = tomorrowDue(app);
   if (!list.length || app.prefs.remindNotifiedDay === today || permission() !== 'granted') return;
   setPref('remindNotifiedDay', today); // 先記錄再送，避免重繪時重複
-  const { title, body } = describeDue(list);
+  const { title, body } = describeDue(list, app.prefs.remindTone);
   try { await show(title, body, `pfs-due-${tomorrowOf(today)}`); } catch (e) { console.warn('通知失敗', e); }
 }
 
@@ -89,7 +89,7 @@ export function reminderBanner(app, rerender) {
   if (app.prefs.remindSeenDay === today) return null;
   const list = tomorrowDue(app);
   if (!list.length) return null;
-  const { title, body } = describeDue(list);
+  const { title, body } = describeDue(list, app.prefs.remindTone);
   return h('div', { class: 'banner no-print', role: 'status' },
     h('strong', { text: `${title}　` }), h('span', { text: body.replace(/\n/g, '；') }), '　',
     h('a', { href: '#/calendar', text: '看繳費日曆' }), '　',

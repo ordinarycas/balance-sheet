@@ -76,6 +76,7 @@ function remindBlock(app) {
   });
   return h('div', null,
     h('div', { class: 'toggle' }, h('label', null, box, h('span', { text: '明天有要繳的費用時提醒我' })), h('p', null, h('span', { class: 'pill', text: PERM_ZH[permission()] }))),
+    labeled('提醒語氣', choiceField({ label: '提醒語氣', value: app.prefs.remindTone, options: [['neutral', '中性（預設）：只列出項目與金額'], ['encourage', '鼓勵：標題加一句平和的話']], onChange: (v) => { app.setPref('remindTone', v); } })),
     h('ul', { class: 'plain note' },
       h('li', { text: '開啟或回到本網站時檢查：頁面頂端顯示橫幅，已允許通知則同時送出系統通知（每天一次）。' }),
       h('li', { text: '網站完全關閉時無法保證準時通知：只有 Android 已安裝的 Chrome／Edge 會在背景盡力檢查，時間不固定；iPhone 需先「加入主畫面」（iOS 16.4 以上）才有通知。' }),
