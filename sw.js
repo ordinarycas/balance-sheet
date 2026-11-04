@@ -1,7 +1,7 @@
 // Service Worker：讓網站安裝後可離線使用。只處理「同源 GET」；行情／匯率等跨網域請求完全不經過這裡。
 // 下方 PRECACHE 區塊由 `npm run gen:sw` 產生（含內容雜湊的版本號）；tests/pwa.test.js 會檢查它是否過期。
 // === PRECACHE:BEGIN ===
-const VERSION = 'pfs-1bf91d0eaa';
+const VERSION = 'pfs-9659f4831c';
 const PRECACHE = [
   "./",
   "./css/style.css",

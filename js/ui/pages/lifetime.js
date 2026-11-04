@@ -31,6 +31,13 @@ export default function render(app) {
     if (!Number.isFinite(v) || v < 40 || v > 80) { retire.value = p.lifeRetire; app.toast('退休年齡請輸入 40 到 80'); return; }
     app.setPref('lifeRetire', v);
   });
+  const start = h('input', { type: 'number', class: 'in', min: 10, max: 80, step: 1, value: p.lifeStart || '', placeholder: '留空＝現在', 'aria-label': '從幾歲才開始存錢' });
+  start.addEventListener('change', () => {
+    if (start.value === '') { app.setPref('lifeStart', 0); return; }
+    const v = Math.round(Number(start.value));
+    if (!Number.isFinite(v) || v < 10 || v > 80) { start.value = p.lifeStart || ''; app.toast('請輸入 10 到 80 的整數，或留空代表從現在開始'); return; }
+    app.setPref('lifeStart', v);
+  });
   const custom = h('input', { type: 'number', class: 'in', min: 0, step: 1000, value: p.lifeMonthly || '', placeholder: '例如 40000', 'aria-label': '自訂月收入（NT$）', disabled: p.lifeWage !== 'custom' });
   custom.addEventListener('change', () => {
     const v = custom.value === '' ? 0 : Math.round(Number(custom.value));
@@ -44,7 +51,8 @@ export default function render(app) {
     h('div', { class: 'incomebar' },
       labeled('性別（生命表依性別分開）', choiceField({ label: '性別', value: p.lifeSex, options: [['', '請選擇'], ['male', '男'], ['female', '女']], onChange: (v) => app.setPref('lifeSex', v) })),
       labeled('生日', birth),
-      labeled('預計退休年齡', retire)),
+      labeled('預計退休年齡', retire),
+      labeled('從幾歲才開始存錢（留空＝現在）', start)),
     h('div', { class: 'incomebar' },
       labeled('月收入', choiceField({
         label: '月收入來源', value: p.lifeWage,
@@ -68,6 +76,16 @@ export default function render(app) {
       living = m.salary.budget.fixed;
     }
     const r = lifetimeIncome({ sex: p.lifeSex, age, retireAge: p.lifeRetire, monthly }, bs);
+    // 從這個年紀「才」開始存錢：只算到退休前、從該年紀起的月數
+    const stopAge = Math.min(p.lifeRetire, age + r.lifeLeft);
+    const lateAge = p.lifeStart > age ? p.lifeStart : null;
+    const lateYears = lateAge === null ? 0 : Math.max(stopAge - lateAge, 0);
+    const lateIncome = lateAge === null ? null : monthly * Math.round(lateYears * 12);
+    const lateStart = lateAge === null ? null : h('div', { class: 'grid' },
+      kpi('從現在開始的累積收入', twd(r.income)),
+      kpi(`從 ${lateAge} 歲才開始的累積收入`, twd(lateIncome), 'bad'),
+      kpi('晚開始少掉的', twd(r.income - lateIncome)),
+      kpi('晚了幾年', yrs(lateAge - age)));
     const endYear = Number(today.slice(0, 4)) + Math.round(r.lifeLeft);
 
     root.appendChild(section('時間',
@@ -85,7 +103,8 @@ export default function render(app) {
         kpi('退休前還能賺到的總收入', twd(r.income), 'good'),
         kpi('平均分攤到餘命每個月', twd(r.perLifeMonth)),
         kpi('退休後預期還有', yrs(r.retirementYears))),
-      incomeCurve({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, monthly }),
+      incomeCurve({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, monthly, startAge: p.lifeStart }),
+      lateStart,
       monthly <= 0 ? h('p', { class: 'note', text: '月收入是 0，請選擇基本工資或填入自訂金額。' }) : null,
       h('p', { class: 'note', text: `算法：月收入 × 12 × 從現在到退休的年數（${p.lifeRetire} 歲或預期壽命，取較早者）。以今天的新台幣計，稅前，不含調薪、通膨、折現、勞保年金與退休金，也不含失業或中斷工作的時間；這是「只靠基本工資」的保守下限，不是你實際會賺的金額。` })));
 

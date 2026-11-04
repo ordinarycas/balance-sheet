@@ -23,6 +23,7 @@ export const DEFAULT_PREFS = {
   remindTone: 'neutral',   // 提醒語氣 neutral | encourage
   lifeSex: '',             // 薪資收入與時間：性別 male | female（只存本機、不匯出）
   lifeBirth: '',           // 生日 YYYY-MM-DD（只存本機、不匯出）
+  lifeStart: 0,            // 「從幾歲才開始存錢」：0＝從現在開始；否則為大於現在年齡的歲數
   lifeRetire: 65,          // 預計退休年齡
   lifeMonthly: 0,          // 自訂月收入
   lifeWage: 'current',     // current | proposed | custom
@@ -57,6 +58,7 @@ export function getPrefs() {
   if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(p.lifeBirth)) p.lifeBirth = '';
   if (!['current', 'proposed', 'custom'].includes(p.lifeWage)) p.lifeWage = 'current';
   p.lifeRetire = Number.isFinite(p.lifeRetire) ? Math.min(Math.max(Math.round(p.lifeRetire), 40), 80) : 65;
+  p.lifeStart = Number.isFinite(p.lifeStart) && p.lifeStart >= 10 && p.lifeStart <= 80 ? Math.round(p.lifeStart) : 0;
   if (!Number.isFinite(p.lifeMonthly) || p.lifeMonthly < 0) p.lifeMonthly = 0;
   if (!['neutral', 'encourage'].includes(p.remindTone)) p.remindTone = 'neutral';
   if (!Number.isFinite(p.bufferCash) || p.bufferCash < 0) p.bufferCash = 0;
