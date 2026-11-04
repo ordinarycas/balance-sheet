@@ -94,10 +94,11 @@ export default function render(app) {
     root.appendChild(h('p', { class: 'note', text: '目前沒有計息中的借款（日息為 0），所以時鐘不會浮出利息。到「P05 借款」或「P07 股票質押」新增後，這裡會自動出現。' }));
   } else {
     root.appendChild(section('利息累積',
-      h('div', { class: 'grid' },
+      h('div', { class: 'grid clk-accrued-grid' },
         kpi('每秒', `NT$ ${fmt5(it.perSecond)}`),
         kpi('每分鐘', `NT$ ${fmt5(it.perMinute)}`),
         kpi('每小時', `NT$ ${fmt5(it.perHour)}`),
+        kpi('每四小時', `NT$ ${fmt5(it.perHour * 4)}`),
         kpi('每日', `NT$ ${fmt5(it.daily)}`),
         h('div', { class: 'kpi' }, h('div', { class: 'l', text: '今天 00:00 起累積' }),
           h('div', { class: 'v' }, 'NT$ ', accrued.el, h('span', { class: 'sr-only', text: '（每秒更新）' })))),

@@ -3,6 +3,7 @@
 import { h } from '../dom.js';
 import { twd } from '../fmt.js';
 import { kpi, section } from '../components/table.js';
+import { lifeTimeline, incomeCurve, waterfall } from '../components/lifechart.js';
 import { choiceField, labeled } from '../components/forms.js';
 import { todayTaipei } from '../../core/dates.js';
 import { balanceSheet } from '../../core/scenario.js';
@@ -39,7 +40,7 @@ export default function render(app) {
   const useBs = h('input', { type: 'checkbox', checked: p.lifeUseBS, 'aria-label': '代入目前的資產負債情況' });
   useBs.addEventListener('change', () => app.setPref('lifeUseBS', useBs.checked));
 
-  root.appendChild(h('div', { class: 'card no-print' },
+  root.appendChild(h('div', { class: 'card no-print lifeform' },
     h('div', { class: 'incomebar' },
       labeled('性別（生命表依性別分開）', choiceField({ label: '性別', value: p.lifeSex, options: [['', '請選擇'], ['male', '男'], ['female', '女']], onChange: (v) => app.setPref('lifeSex', v) })),
       labeled('生日', birth),
@@ -75,6 +76,7 @@ export default function render(app) {
         kpi(`平均餘命（${p.lifeSex === 'male' ? '男' : '女'}）`, yrs(r.lifeLeft)),
         kpi('平均預期壽命到', `${(age + r.lifeLeft).toFixed(1)} 歲（約 ${endYear} 年）`),
         kpi(r.retired ? '已到退休年齡' : `距離退休（${p.lifeRetire} 歲）`, r.retired ? '—' : `${yrs(r.workYears)}（${r.workMonths} 個月）`)),
+      lifeTimeline({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire }),
       h('p', { class: 'note', text: `平均餘命來自「${LIFE_TABLE.source}」：同年齡、同性別全體人口的平均，不是對你個人壽命的預測；表中只有每 10 歲一個數字，其間以線性內插估計。` })));
 
     root.appendChild(section('人生最低收入',
@@ -83,6 +85,7 @@ export default function render(app) {
         kpi('退休前還能賺到的總收入', twd(r.income), 'good'),
         kpi('平均分攤到餘命每個月', twd(r.perLifeMonth)),
         kpi('退休後預期還有', yrs(r.retirementYears))),
+      incomeCurve({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, monthly }),
       monthly <= 0 ? h('p', { class: 'note', text: '月收入是 0，請選擇基本工資或填入自訂金額。' }) : null,
       h('p', { class: 'note', text: `算法：月收入 × 12 × 從現在到退休的年數（${p.lifeRetire} 歲或預期壽命，取較早者）。以今天的新台幣計，稅前，不含調薪、通膨、折現、勞保年金與退休金，也不含失業或中斷工作的時間；這是「只靠基本工資」的保守下限，不是你實際會賺的金額。` })));
 
@@ -101,6 +104,14 @@ export default function render(app) {
           kpi('還清借款約等於幾個月收入', b.debtMonthsOfIncome === null ? '—' : `${b.debtMonthsOfIncome.toFixed(1)} 個月`),
           kpi('目前每月生活固定支出（P03）', twd(living)),
           kpi('若支出不變，餘命內合計', twd(livingTotal))),
+        waterfall([
+          { label: '人生最低收入', from: 0, to: r.income, kind: 'pos' },
+          { label: '＋ 股票資產', from: r.income, to: r.income + b.assets, kind: 'pos' },
+          { label: '－ 尚未償還的借款', from: r.income + b.assets, to: b.afterDebt, kind: 'neg' },
+          { label: '＝ 還清借款後的總資源', from: 0, to: b.afterDebt, kind: 'sum' },
+          { label: '－ 餘命內固定支出（假設不變）', from: b.afterDebt, to: left, kind: 'neg' },
+          { label: '＝ 扣除支出後的餘裕', from: 0, to: left, kind: 'sum' },
+        ], '資源增減圖（人生最低收入 → 餘裕）'),
         h('p', { class: left >= 0 ? 'note' : 'note', text: left >= 0
           ? `把餘命內的固定支出也扣掉後，仍有約 ${twd(left)} 的餘裕（假設支出與目前相同、不含通膨）。`
           : `把餘命內的固定支出也扣掉後，約差 ${twd(-left)}（假設支出與目前相同、不含通膨）。這代表光靠基本工資不夠，可以從「收入網站資源」找增加收入的方向，或到「還款進度」看提早還清能省多少利息。` }),

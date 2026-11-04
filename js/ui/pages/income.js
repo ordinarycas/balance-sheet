@@ -3,7 +3,7 @@
 import { h } from '../dom.js';
 import { twd } from '../fmt.js';
 import { dataTable, kpi, section } from '../components/table.js';
-import { LINKS, MIN_WAGE, MIN_WAGE_NEXT, MIN_WAGE_SOURCE, DISCLAIMER, JOB_GROUPS } from '../../data/income-resources.js';
+import { LINKS, AGE_RULES, AGE_LAW, MIN_WAGE, MIN_WAGE_NEXT, MIN_WAGE_SOURCE, DISCLAIMER, JOB_GROUPS } from '../../data/income-resources.js';
 
 export default function render() {
   const root = h('div', null,
@@ -24,6 +24,18 @@ export default function render() {
       kpi(`${MIN_WAGE_NEXT.year} 年基本工資（時薪，待核定）`, twd(MIN_WAGE_NEXT.hourly))),
     h('p', { class: 'note', text: `勞動部公告，自 ${MIN_WAGE.year} 年 1 月 1 日起實施。正式員工底薪不得低於月薪基本工資；計時工作不得低於時薪基本工資。${MIN_WAGE_NEXT.year} 年（民國 116 年）的月薪 ${twd(MIN_WAGE_NEXT.monthly)}、時薪 ${twd(MIN_WAGE_NEXT.hourly)} 是基本工資審議會的決議，需經行政院核定才生效，核定前仍以 ${MIN_WAGE.year} 年為準。` }),
     h('p', { class: 'note' }, '資料來源：', h('a', { href: MIN_WAGE_SOURCE.url, target: '_blank', rel: 'noopener noreferrer', text: MIN_WAGE_SOURCE.name }), '（新分頁開啟）')));
+
+  root.appendChild(section('工作的年齡條件',
+    dataTable({
+      label: '工作的年齡條件（勞動基準法第 44–46 條）',
+      cols: [
+        { label: '年齡', get: (r) => r.age, wrap: true },
+        { label: '規定重點', get: (r) => r.rule, wrap: true },
+        { label: '條文', get: (r) => r.article, wrap: true },
+      ],
+      rows: AGE_RULES,
+    }),
+    h('p', { class: 'note' }, '重點整理，不是法律意見；資料來源：', h('a', { href: AGE_LAW.url, target: '_blank', rel: 'noopener noreferrer', text: AGE_LAW.name }), '（新分頁開啟）。下方職缺的條件，未滿 18 歲者請先對照這張表。')));
 
   root.appendChild(h('p', { class: 'note', role: 'note', text: DISCLAIMER }));
 

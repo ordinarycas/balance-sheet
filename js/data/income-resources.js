@@ -12,6 +12,15 @@ export const MIN_WAGE = { year: 2026, monthly: 29500, hourly: 196 };
 export const MIN_WAGE_NEXT = { year: 2027, monthly: 30900, hourly: 205 };
 export const MIN_WAGE_SOURCE = { name: '勞動部公告：基本工資', url: 'https://www.mol.gov.tw/1607/1632/1633/99195/post' };
 
+/** 勞動基準法第 44–46 條（童工與未成年工）的重點整理；條文以主管機關公告為準。 */
+export const AGE_LAW = { name: '勞動部全國法規資料庫：勞動基準法', url: 'https://laws.mol.gov.tw/flaw/FLAWDAT0201.aspx?id=FL014930&beginpos=5' };
+export const AGE_RULES = [
+  { age: '未滿 15 歲', rule: '雇主原則上不得僱用；例外是國民中學畢業，或主管機關認定工作性質與環境無礙身心健康而許可。受僱者準用童工保護規定；未具僱傭關係、直接為他人提供勞務取得報酬者也準用。', article: '第 45 條' },
+  { age: '15 歲以上、未滿 16 歲', rule: '受僱工作者稱為「童工」，適用童工保護規定，不得從事危險性或有害性的工作。', article: '第 44 條' },
+  { age: '16 歲以上、未滿 18 歲', rule: '不得從事危險性或有害性的工作。', article: '第 44 條' },
+  { age: '未滿 18 歲', rule: '受僱時，雇主應備有法定代理人同意書與年齡證明文件。', article: '第 46 條' },
+  { age: '18 歲以上', rule: '不受上述未成年工的特別限制（仍適用一般勞動法令）。', article: '—' },
+];
 export const DISCLAIMER = '以下條件與薪資是依一般市場情況整理的概略估計（新台幣、稅前），不是官方統計，也不保證；實際會因地區、公司、班別、經驗與景氣而不同，請以職缺公告與主管機關規定為準。';
 
 /** @type {{id:string, title:string, intro:string, jobs:{name:string, requirement:string, pay:string, note:string}[]}[]} */
