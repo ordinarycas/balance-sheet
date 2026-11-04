@@ -244,3 +244,17 @@ select { min-height: 40px; }
   .toolbar > *, .filters > * { min-width: 0; }
   .toolbar button, .filters button { min-height: 40px; }
 }
+
+/* 設定頁：開關與說明對齊；外觀欄位頂端對齊 */
+.toggle { margin: 10px 0; }
+.toggle > label { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; line-height: 1.4; }
+.toggle input[type=checkbox] { flex: 0 0 auto; width: 20px; height: 20px; min-height: 0; margin: 1px 0 0; }
+.toggle > p { margin: 4px 0 0 30px; }
+.formgrid.appearance { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: start; }
+.steps { margin: 6px 0 6px 1.2em; padding: 0; line-height: 1.7; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; min-height: 40px; }
+/* 每月支出：前一月／起始月份／後一月同一列 */
+.stepper { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: end; margin: 8px 0; max-width: 520px; }
+.stepper > button, .stepper > .field { margin: 0; }
+.stepper > button:nth-child(4) { grid-column: 1 / -1; justify-self: start; }
+@media (max-width: 560px) { .stepper > button { padding-inline: 10px; font-size: .9rem; } }

@@ -40,11 +40,12 @@ export default function render(app) {
   const root = h('div', null,
     h('h1', { text: '每月支出' }),
     h('p', { class: 'sub', text: '生活支出（信用卡、房租、家裡支出）＋ 借款還款 ＝ 當月總支出。支出為負數。' }),
-    h('div', { class: 'row no-print' },
+    h('div', { class: 'stepper no-print' },
       button('◀ 前一月', () => app.commit((d) => { d.settings.monthStart = monthKeyAdd(st.settings.monthStart ?? m.startMonth, -1); }), '', '起始月份往前一個月'),
-      labeled('起始月份', startInput, '預設為基準日前一個月'),
+      labeled('起始月份', startInput),
       button('後一月 ▶', () => app.commit((d) => { d.settings.monthStart = monthKeyAdd(st.settings.monthStart ?? m.startMonth, 1); }), '', '起始月份往後一個月'),
       st.settings.monthStart ? h('button', { type: 'button', onClick: () => app.commit((d) => { d.settings.monthStart = null; }) }, '恢復預設') : null),
+    h('p', { class: 'note no-print', text: '起始月份預設為基準日前一個月。' }),
     dataTable({ cols, rows: mt.rows, rowClass: (r) => (r.month === asOfMonth ? 'cur' : ''), foot: [sumRow('12個月合計', mt.totals), sumRow('月平均', mt.avg)] }),
     h('p', { class: 'note', text: '借款還款：保單年繳利息只在繳款月出現，美元以目前匯率折算 NT$。淺藍底為基準日所在月份。' }));
   const labels = mt.rows.map((r) => r.label);
