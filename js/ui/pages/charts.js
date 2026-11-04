@@ -6,8 +6,8 @@ import { barChart, lineChart, legend } from '../components/chart.js';
 import { choiceField, labeled, button } from '../components/forms.js';
 import { donut, ratioBar } from '../components/donut.js';
 import { stackedArea } from '../components/areachart.js';
-import { heatmap } from '../components/heatmap.js';
-import { stackSeries, spendHeatmap } from '../../core/chartdata.js';
+import { heatmap, dayHeatmap } from '../components/heatmap.js';
+import { stackSeries, spendHeatmap, payDayDensity } from '../../core/chartdata.js';
 import { balanceSheet, projectIncome, monthlySplit, effectiveIncome } from '../../core/scenario.js';
 
 const HORIZONS = [[12, '12 個月'], [24, '24 個月'], [36, '36 個月'], [60, '60 個月'], [120, '120 個月']];
@@ -148,5 +148,8 @@ export default function render(app) {
   root.appendChild(section('每月支出熱力圖',
     heatmap({ title: `未來 12 個月各項目的現金流出（${m.months[0]} 起）`, ...heat }),
     h('p', { class: 'note', text: '資料來自「P02 每月支出」與還款表：信用卡、房租、家裡支出與各筆借款的當月還款（本金＋利息）。顏色越深代表該格金額越大，格內也標有數字；可以一眼看出哪幾個月壓力集中，方便提前準備。' })));
+  root.appendChild(section('每月哪幾天付款最集中',
+    dayHeatmap({ title: `每月 1–31 日的應繳金額（未來 12 個月合計）`, d: payDayDensity(m.calendar.events, m.months.length) }),
+    h('p', { class: 'note', text: '把行事曆中未來 12 個月的應繳項目（借款、信用卡、房租、家裡支出、質押利息等）依「幾日」加總。顏色越深代表那一天要繳的錢越多；若集中在同一週，可以考慮和銀行討論調整扣款日，或預先把錢備好。' })));
   return root;
 }

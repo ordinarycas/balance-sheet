@@ -1,7 +1,7 @@
 // Service Worker：讓網站安裝後可離線使用。只處理「同源 GET」；行情／匯率等跨網域請求完全不經過這裡。
 // 下方 PRECACHE 區塊由 `npm run gen:sw` 產生（含內容雜湊的版本號）；tests/pwa.test.js 會檢查它是否過期。
 // === PRECACHE:BEGIN ===
-const VERSION = 'pfs-071138d8b2';
+const VERSION = 'pfs-27c3b84582';
 const PRECACHE = [
   "./",
   "./css/style.css",
@@ -21,9 +21,11 @@ const PRECACHE = [
   "./js/core/dates.js",
   "./js/core/decimal.js",
   "./js/core/expenses.js",
+  "./js/core/lifetime.js",
   "./js/core/loan.js",
   "./js/core/model.js",
   "./js/core/payoff.js",
+  "./js/core/pile.js",
   "./js/core/pledge.js",
   "./js/core/salary.js",
   "./js/core/scenario.js",
@@ -58,7 +60,10 @@ const PRECACHE = [
   "./js/ui/components/donut.js",
   "./js/ui/components/forms.js",
   "./js/ui/components/heatmap.js",
+  "./js/ui/components/interest-pile.js",
+  "./js/ui/components/rolling.js",
   "./js/ui/components/table.js",
+  "./js/ui/components/tick-sound.js",
   "./js/ui/components/vtable.js",
   "./js/ui/csv.js",
   "./js/ui/dom.js",
@@ -72,6 +77,7 @@ const PRECACHE = [
   "./js/ui/pages/help.js",
   "./js/ui/pages/holdings.js",
   "./js/ui/pages/income.js",
+  "./js/ui/pages/lifetime.js",
   "./js/ui/pages/loans.js",
   "./js/ui/pages/monthly.js",
   "./js/ui/pages/overview.js",

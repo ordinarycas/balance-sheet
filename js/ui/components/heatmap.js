@@ -29,3 +29,36 @@ export function heatmap({ title, months, rows, colTotals, max, grand }) {
     h('div', { class: 'tablewrap', tabindex: '0', role: 'region', 'aria-label': `${title}（可左右捲動）` }, h('table', { class: 'heat' }, head, body, foot)),
     scale);
 }
+
+/**
+ * 每月日期熱力圖：1–31 日排成月曆格（每列 7 天），顏色＝未來 12 個月落在該日的應繳金額合計，格內另有金額與筆數。
+ * @param {{title:string, d:ReturnType<typeof import('../../core/chartdata.js').payDayDensity>}} o
+ */
+export function dayHeatmap({ title, d }) {
+  if (!d.total) return h('p', { class: 'note', text: `${title}：目前沒有應繳款項` });
+  const cell = (c) => {
+    const lvl = heatLevel(c.total, d.max);
+    const label = c.total > 0 ? `每月 ${c.day} 日：${d.months} 個月合計 ${twd(c.total)}，共 ${c.count} 筆（${c.items.join('、')}）` : `每月 ${c.day} 日：沒有應繳款項`;
+    return h('td', { class: `hm hm${lvl} hm-day`, title: label },
+      h('span', { class: 'sr-only', text: label }),
+      h('span', { class: 'hd', 'aria-hidden': 'true', text: String(c.day) }),
+      h('span', { class: 'hv', 'aria-hidden': 'true', text: c.total > 0 ? compact(c.total) : '' }),
+      h('span', { class: 'hc', 'aria-hidden': 'true', text: c.count ? `${c.count} 筆` : '' }));
+  };
+  const weeks = [];
+  for (let i = 0; i < 31; i += 7) {
+    const row = d.days.slice(i, i + 7).map(cell);
+    while (row.length < 7) row.push(h('td', { class: 'hm-empty', 'aria-hidden': 'true' }));
+    weeks.push(h('tr', null, row));
+  }
+  const top = d.top.length
+    ? h('p', null, '最集中的日子：', d.top.map((c, i) => h('span', null, i ? '；' : '', h('strong', { text: `${c.day} 日` }), `（${twd(c.total)}，${c.count} 筆）`)))
+    : null;
+  return h('figure', { class: 'hm-fig' },
+    h('figcaption', { text: title }),
+    top,
+    h('div', { class: 'tablewrap', tabindex: '0', role: 'region', 'aria-label': `${title}（可左右捲動）` },
+      h('table', { class: 'heat dayheat', 'aria-label': title }, h('tbody', null, weeks))),
+    h('div', { class: 'hm-scale', 'aria-hidden': 'true' },
+      h('span', { text: '少' }), [1, 2, 3, 4, 5].map((l) => h('i', { class: `hm${l}` })), h('span', { text: `多（單日最大 ${twd(d.max)}）` })));
+}

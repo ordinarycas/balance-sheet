@@ -18,7 +18,7 @@ function icon(name) {
 
 const PRIMARY = [['overview', '總覽'], ['monthly', '每月'], ['calendar', '日曆'], ['loans', '借款']];
 const GROUPS = [
-  ['分析', ['charts', 'progress', 'clock', 'income', 'salary', 'schedule']],
+  ['分析', ['charts', 'progress', 'clock', 'income', 'lifetime', 'salary', 'schedule']],
   ['資產', ['pledge', 'holdings', 'expenses']],
   ['系統', ['settings', 'help', 'data']],
 ];

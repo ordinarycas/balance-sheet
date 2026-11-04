@@ -1,7 +1,7 @@
 // 全站常數
 export const SCHEMA_VERSION = 2;
 export const APP_ID = 'personal-finance-static';
-export const APP_VERSION = '1.7.0';
+export const APP_VERSION = '1.8.0';
 
 /** 保單借款（只繳利息、本金不攤還）的試算年數。原 Excel 為 7 期（逐日明細 2,557 列）。 */
 export const DEFAULT_ANNUAL_PERIODS = 7;

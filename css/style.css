@@ -388,3 +388,36 @@ table.heat .hm-tot { font-weight: 600; }
 .hm-scale i.hm3 { background: color-mix(in srgb, var(--c1) 30%, var(--panel)); } .hm-scale i.hm4 { background: color-mix(in srgb, var(--c1) 40%, var(--panel)); }
 .hm-scale i.hm5 { background: color-mix(in srgb, var(--c1) 50%, var(--panel)); }
 @media print { .ar-range { display: none; } table.heat td.hm1, .hm-scale i.hm1 { background: #eaf0f9; } table.heat td.hm2, .hm-scale i.hm2 { background: #d5e1f3; } table.heat td.hm3, .hm-scale i.hm3 { background: #c0d1ed; } table.heat td.hm4, .hm-scale i.hm4 { background: #abc2e7; } table.heat td.hm5, .hm-scale i.hm5 { background: #96b3e1; } }
+
+/* 日期熱力圖、螢幕閱讀器專用文字 */
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+table.dayheat { table-layout: fixed; max-width: 640px; }
+table.dayheat td.hm-day { height: 58px; padding: 3px 2px; vertical-align: top; text-align: center; position: relative; }
+table.dayheat .hd { display: block; font-size: .72rem; color: var(--muted); text-align: left; padding-left: 3px; }
+table.dayheat .hv { display: block; font-weight: 700; font-size: .85rem; }
+table.dayheat .hc { display: block; font-size: .68rem; color: var(--muted); }
+table.dayheat td.hm-empty { background: none; }
+
+/* 時鐘：物理堆積、里程表數字 */
+.clk-stage { position: relative; width: min(480px, 92vw); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.clk-stage .clk-dial { flex: 0 0 auto; }
+.clk-floor { display: none; }
+.clk-stage.piling .clk-floor { display: block; height: 190px; width: 100%; }
+.clk-phys { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.clk-bub { position: absolute; left: 0; top: 0; display: grid; place-items: center; border-radius: 50%; box-sizing: border-box; background: color-mix(in srgb, var(--neg) 14%, var(--panel)); border: 1px solid var(--neg); color: var(--neg); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; will-change: transform; }
+.clk-bub.fade { opacity: 0; transition: transform .3s ease-in, opacity .3s ease-in; }
+.clk-bub.merge { animation: clk-merge .35s ease-out; }
+@keyframes clk-merge { 0% { box-shadow: 0 0 0 0 var(--neg); } 40% { box-shadow: 0 0 0 6px transparent; filter: brightness(1.15); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.clk-controls { max-width: 560px; margin: 8px auto; }
+.clk-controls .in { width: 5.5em; }
+.clk-pileinfo { text-align: center; min-height: 1.4em; }
+.rn { display: inline-flex; font-variant-numeric: tabular-nums; }
+.rn .rd { position: relative; display: inline-block; overflow: hidden; width: 1ch; height: 1.25em; line-height: 1.25em; vertical-align: bottom; }
+.rn .rs { display: inline-block; height: 1.25em; line-height: 1.25em; }
+.rn .rd .rv { position: absolute; left: 0; right: 0; top: 0; text-align: center; }
+.rn .rv.in { animation: rn-in .22s ease-out; }
+.rn .rv.out { animation: rn-out .22s ease-in forwards; }
+@keyframes rn-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes rn-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .rn .rv.in, .rn .rv.out, .clk-bub.merge { animation: none; } }
+table.dayheat .hd, table.dayheat .hc { color: var(--ink); }

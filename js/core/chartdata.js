@@ -64,3 +64,24 @@ export function heatLevel(value, max) {
   if (!(value > 0) || !(max > 0)) return 0;
   return Math.min(5, 1 + Math.floor((value / max) * 5 - 1e-9));
 }
+
+/**
+ * 每月哪幾天付款最集中：把未來 12 個月的應繳項目（金額為負的事件）依「日」（1–31）加總。
+ * @param {{date:string, amount:number, item:string}[]} events model.calendar.events
+ * @returns {{days:{day:number,total:number,count:number,items:string[]}[], max:number, top:object[], months:number, total:number}}
+ */
+export function payDayDensity(events, months = 12) {
+  const days = Array.from({ length: 31 }, (_, i) => ({ day: i + 1, total: 0, count: 0, items: [] }));
+  for (const e of events) {
+    if (!(e.amount < 0)) continue;
+    const d = Number(e.date.slice(8, 10));
+    if (!(d >= 1 && d <= 31)) continue;
+    const c = days[d - 1];
+    c.total += -e.amount;
+    c.count += 1;
+    if (!c.items.includes(e.item)) c.items.push(e.item);
+  }
+  const max = Math.max(0, ...days.map((c) => c.total));
+  const top = days.filter((c) => c.total > 0).sort((a, b) => b.total - a.total || a.day - b.day).slice(0, 3);
+  return { days, max, top, months, total: days.reduce((a, c) => a + c.total, 0) };
+}

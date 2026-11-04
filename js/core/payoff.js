@@ -145,3 +145,60 @@ export function smallWins(model, income) {
 }
 
 export { dn };
+
+// ---- 解鎖的現金流、已走過的路、緩衝月數、額外收入分配 ----
+
+/** 每還清一筆攤還型借款，每月多出多少可用現金（月付金 × 匯率，沿用還款表）。 */
+export function unlockTimeline(model) {
+  const items = live(model)
+    .filter(({ s, st }) => s.kind === 'amortizing' && !st.settled && s.rows.some((r) => r.dueDn > model.asOfDn))
+    .map(({ s }) => ({ name: s.name, date: s.rows[s.rows.length - 1].due, dn: s.lastDueDn, monthly: s.pmt * s.fx }))
+    .sort((a, b) => a.dn - b.dn || a.name.localeCompare(b.name));
+  let cum = 0;
+  const steps = items.map((x) => ({ ...x, cumulative: (cum += x.monthly) }));
+  return { steps, totalMonthly: cum };
+}
+
+/** 基準日（含）以前已繳的本金（含提前還款）與利息，依月份累計；金額折成新台幣。 */
+export function pastPath(model) {
+  const byMonth = new Map();
+  for (const s of model.schedules) {
+    if (s.error) continue;
+    for (const r of s.rows) {
+      if (r.dueDn > model.asOfDn) continue;
+      const k = monthKey(r.dueDn);
+      const e = byMonth.get(k) ?? { principal: 0, interest: 0 };
+      e.principal += ((r.principal ?? 0) + (r.prepay ?? 0)) * s.fx;
+      e.interest += (r.interest ?? 0) * s.fx;
+      byMonth.set(k, e);
+    }
+  }
+  const keys = [...byMonth.keys()].sort();
+  if (!keys.length) return { months: [], cumPrincipal: [], cumInterest: [], totalPrincipal: 0, totalInterest: 0 };
+  const months = [];
+  for (let k = keys[0]; k <= keys[keys.length - 1]; k = monthKeyAdd(k, 1)) months.push(k);
+  let p = 0;
+  let i = 0;
+  const cumPrincipal = [];
+  const cumInterest = [];
+  for (const k of months) { const e = byMonth.get(k); p += e?.principal ?? 0; i += e?.interest ?? 0; cumPrincipal.push(p); cumInterest.push(i); }
+  return { months, cumPrincipal, cumInterest, totalPrincipal: p, totalInterest: i };
+}
+
+/** 現有可動用資金可支撐幾個月的支出（生活固定支出＋必繳還款）。 */
+export function bufferStatus(model, cash, targetMonths) {
+  const spend = model.salary.budget.fixed + model.salary.budget.mustTotal;
+  const months = spend > 0 ? Math.max(cash, 0) / spend : null;
+  const target = Math.max(Number(targetMonths) || 0, 0);
+  return { spend, months, target, progress: months === null || target <= 0 ? 0 : Math.min(months / target, 1), targetAmount: spend * target };
+}
+
+/** 金額相當於幾小時的基本工資。 */
+export const hoursOfWage = (amount, hourly) => (hourly > 0 ? Math.max(amount, 0) / hourly : 0);
+
+/** 額外收入紀錄 → 使用者選擇要拿去提前還款的總額。 */
+export function extraIncomePlan(log) {
+  const total = log.reduce((a, e) => a + e.amount, 0);
+  const prepay = log.reduce((a, e) => a + (e.amount * e.pct) / 100, 0);
+  return { total, prepay, keep: total - prepay };
+}

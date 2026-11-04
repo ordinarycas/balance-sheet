@@ -22,6 +22,7 @@ const ROUTES = [
   ['progress', 'P14 還款進度', () => import('./ui/pages/progress.js')],
   ['clock', 'P15 時鐘', () => import('./ui/pages/clock.js')],
   ['income', 'P16 收入網站資源', () => import('./ui/pages/income.js')],
+  ['lifetime', 'P17 薪資收入與時間', () => import('./ui/pages/lifetime.js')],
   ['monthly', 'P02 每月支出', () => import('./ui/pages/monthly.js')],
   ['salary', 'P03 月薪情境', () => import('./ui/pages/salary.js')],
   ['calendar', 'P04 繳費日曆', () => import('./ui/pages/calendar.js')],
