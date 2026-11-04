@@ -1,7 +1,7 @@
 // Service Worker：讓網站安裝後可離線使用。只處理「同源 GET」；行情／匯率等跨網域請求完全不經過這裡。
 // 下方 PRECACHE 區塊由 `npm run gen:sw` 產生（含內容雜湊的版本號）；tests/pwa.test.js 會檢查它是否過期。
 // === PRECACHE:BEGIN ===
-const VERSION = 'pfs-95362d101f';
+const VERSION = 'pfs-3fa10676a4';
 const PRECACHE = [
   "./",
   "./css/style.css",
@@ -28,6 +28,7 @@ const PRECACHE = [
   "./js/data/migrate.js",
   "./js/data/prefs.js",
   "./js/data/quotes.js",
+  "./js/data/reminders.js",
   "./js/data/schema.js",
   "./js/data/storage.js",
   "./js/data/store.js",
@@ -62,6 +63,7 @@ const PRECACHE = [
   "./js/ui/pages/salary.js",
   "./js/ui/pages/schedule.js",
   "./js/ui/pages/settings.js",
+  "./js/ui/reminder.js",
   "./manifest.webmanifest",
   "./schema/finance-v1.schema.json",
   "./vendor/decimal.mjs",
@@ -79,6 +81,35 @@ self.addEventListener('activate', (e) => {
       .then((keys) => Promise.all(keys.filter((k) => k.startsWith('pfs-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
+});
+
+// ---- 繳費提醒 ----
+// 頁面會把接下來 14 天的應繳快照存進 'reminders-data' 快取（只在本機）。Periodic Background Sync 觸發時（僅部分 Android 瀏覽器），
+// 檢查「明天」是否有項目並顯示通知；tag 與頁面端相同，所以同一天不會重複出現。
+const REMIND_CACHE = 'reminders-data';
+async function remindIfDue() {
+  const c = await caches.open(REMIND_CACHE);
+  const res = await c.match('./__reminders.json');
+  if (!res) return;
+  const { items } = await res.json();
+  const tomorrow = new Date(Date.now() + 8 * 3600e3 + 24 * 3600e3).toISOString().slice(0, 10);
+  const due = (items || []).filter((x) => x.date === tomorrow);
+  if (!due.length) return;
+  const tag = 'pfs-due-' + tomorrow;
+  if ((await self.registration.getNotifications({ tag })).length) return;
+  const total = due.reduce((a, x) => a + Math.abs(x.amount), 0);
+  const money = (n) => Math.abs(Math.round(n)).toLocaleString('en-US');
+  const lines = due.slice(0, 5).map((x) => x.item + '　NT$' + money(x.amount));
+  if (due.length > 5) lines.push('…另有 ' + (due.length - 5) + ' 筆');
+  await self.registration.showNotification('明天要繳 ' + due.length + ' 筆，合計 NT$' + money(total), { body: lines.join('\n'), tag, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', lang: 'zh-Hant' });
+}
+self.addEventListener('periodicsync', (e) => { if (e.tag === 'pfs-remind') e.waitUntil(remindIfDue().catch(() => {})); });
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((all) => {
+    for (const c of all) if ('focus' in c) { c.navigate?.('./#/calendar').catch(() => {}); return c.focus(); }
+    return self.clients.openWindow('./#/calendar');
+  }));
 });
 
 self.addEventListener('fetch', (e) => {

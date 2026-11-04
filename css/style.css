@@ -229,3 +229,18 @@ input.in:focus-visible, select.in:focus-visible, textarea:focus-visible { outlin
 .top :focus-visible { outline-color: var(--accent-ink); }
 .tablewrap:focus-visible, .vt:focus-visible { outline-offset: -2px; }
 input[type="date"]:focus-within, input[type="month"]:focus-within { outline: 2px solid var(--accent); outline-offset: 0; }
+
+/* 手機：篩選列欄位等高、對齊；虛擬表格表頭不透明 */
+input[type=date], input[type=month] { min-height: 40px; box-sizing: border-box; width: 100%; min-width: 0; }
+select { min-height: 40px; }
+.vt .vt-head { background: var(--head-bg); box-shadow: 0 1px 0 var(--line); }
+.vt .vt-head, .vt .vt-row { box-sizing: border-box; }
+@media (max-width: 560px) {
+  .vt .vt-head, .vt .vt-row { font-size: .82rem; }
+  .vt .vt-head span, .vt .vt-row span { padding: 0 6px; }
+  .row { align-items: flex-end; }
+  .row > .field { flex: 1 1 45%; }
+  .row > .field:has(input[type=search], input[type=text]) { flex-basis: 100%; }
+  .toolbar > *, .filters > * { min-width: 0; }
+  .toolbar button, .filters button { min-height: 40px; }
+}

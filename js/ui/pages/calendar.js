@@ -4,6 +4,9 @@ import { twd, signCls } from '../fmt.js';
 import { dataTable, kpi } from '../components/table.js';
 import { button } from '../components/forms.js';
 import { downloadCsv } from '../csv.js';
+import { downloadBlob } from '../../data/io-json.js';
+import { buildIcs } from '../../data/reminders.js';
+import { todayTaipei, stampTaipei } from '../../core/dates.js';
 
 const CATS = ['借款', '信用卡', '房租', '家裡支出', '股票質押'];
 let hidden = new Set();
@@ -28,6 +31,13 @@ export default function render(app) {
       if (el) el.scrollIntoView({ block: 'center' }); else app.toast('視窗內沒有今天或本月的事件');
     }),
     button('列印', () => app.print()),
+    button('匯出行事曆 .ics', () => {
+      const n = shown.filter((e) => e.amount < 0 && e.date >= todayTaipei()).length;
+      if (!n) { app.toast('沒有今天以後的應繳項目可匯出'); return; }
+      const t = new Date().toISOString().replace(/[-:]|.d+/g, '');
+      downloadBlob(new Blob([buildIcs(shown, { today: todayTaipei(), stamp: t })], { type: 'text/calendar;charset=utf-8' }), `payment-reminders-${stampTaipei().slice(0, 8)}.ics`);
+      app.toast(`已匯出 ${n} 筆，匯入行事曆後會在前一天早上 9 點提醒`);
+    }),
     button('匯出 CSV', () => downloadCsv('payment-calendar.csv', ['日期', '星期', '項目', '費用', '狀態', '備註'],
       shown.map((e) => [e.date, e.weekday, e.item, e.amount, e.status, e.note]))));
 
@@ -51,5 +61,6 @@ export default function render(app) {
     h('p', { class: 'sub', text: `基準日 ${app.asOf}；顯示 ${app.model.months[0]} 起 12 個月。日期未填或金額為 0 的項目不列入。` }),
     h('div', { class: 'grid' }, kpi('未來 7 日應繳', twd(cal.next7)), kpi('本月剩餘應繳（基準日起至月底）', twd(cal.monthRest))),
     filters, tbl,
+    h('p', { class: 'note', text: '「匯出行事曆 .ics」：匯入手機或電腦的行事曆後，由系統在每筆應繳日的前一天早上 9 點提醒，不必開啟本網站。匯出後若資料有變動，請重新匯出；匯出檔含繳費項目與金額，請勿公開分享。' }),
     h('p', { class: 'note', text: '淺藍底＝基準日所在月份；黃底粗體＝今日；灰字＝已過。網路費未填扣款日時預設列在每月底；質押利息需在「P07 股票質押」填入繳款日才會列入。' }));
 }

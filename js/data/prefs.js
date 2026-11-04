@@ -11,6 +11,9 @@ export const DEFAULT_PREFS = {
   lastBackupAt: 0,         // 上次匯出備份時間（毫秒）
   editsSinceBackup: 0,     // 備份後的修改次數
   backupSnoozeUntil: 0,    // 暫停備份提醒到何時（毫秒）
+  remindTomorrow: false,   // 明天有應繳項目時提醒（橫幅＋系統通知）
+  remindNotifiedDay: '',   // 最近一次送出系統通知的日期（每天一次）
+  remindSeenDay: '',       // 最近一次按「知道了」的日期
   chartLib: 'lw',         // 圖表引擎：lw | chartjs | d3 | apex
   theme: 'light',          // light（預設）| dark | auto（跟隨系統）
 };

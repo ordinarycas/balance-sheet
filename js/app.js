@@ -1,5 +1,6 @@
 // 應用程式進入點：載入狀態、計算模型、路由、行情／匯率更新。
 import { getState, subscribe, getLoadNote, hasData } from './data/store.js';
+import { reminderBanner, runReminder } from './ui/reminder.js';
 import { showError } from './ui/components/forms.js';
 import { noteEdit, backupReminder, snoozeBackup } from './data/backup.js';
 import { getPrefs, setPref } from './data/prefs.js';
@@ -232,11 +233,13 @@ async function doRender() {
   const note = getLoadNote();
   const reminder = app.route === 'data' ? null : backupReminder(hasData());
   const keep = sameRoute ? captureUiState(main) : null;
-  main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
+  const due = app.route === 'data' ? null : reminderBanner(app, schedule);
+  main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
   renderedRoute = app.route;
   if (keep) restoreUiState(main, keep);
   document.title = `${ROUTES.find((r) => r[0] === app.route)[1].replace(/^P\d+ /, '')} - 個人資產負債表`;
   window.scrollTo(0, y);
+  runReminder(app);
 }
 
 // 列印：先切成淺色並重繪（圖表也用淺色），等圖表畫完再開列印對話框，結束後還原主題
@@ -282,6 +285,23 @@ if ('serviceWorker' in navigator) {
   if ((location.protocol === 'https:' && !local) || (local && new URLSearchParams(location.search).has('sw'))) {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service Worker 註冊失敗', e));
   }
+}
+
+// 回到前景時重新檢查（跨日後才打開 App 也會提醒）
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') schedule(); });
+
+// 安裝為 App：Chrome／Edge／Android 以 beforeinstallprompt 提供安裝鈕；iOS Safari 無此事件，改提示「加入主畫面」
+{
+  const btn = document.getElementById('install-app');
+  let deferred = null;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; if (btn) btn.hidden = false; });
+  window.addEventListener('appinstalled', () => { deferred = null; if (btn) btn.hidden = true; });
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !standalone;
+  if (btn && ios) btn.hidden = false;
+  btn?.addEventListener('click', async () => {
+    if (deferred) { deferred.prompt(); await deferred.userChoice; deferred = null; btn.hidden = true; } else toast('iPhone／iPad：點 Safari 的「分享」→「加入主畫面」');
+  });
 }
 
 applyTheme();
