@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'sha256-3pRED1tOXas1FXFoPb9TGCjmYe9XQsmO9OV23khV2nY=' 'sha256-aSysLrDECVdJ6L+jLf8CC5QKLmwRuk/OZiZk9mYky8A='; img-src 'self' data:; connect-src 'self' https://www.twse.com.tw https://api.finmindtrade.com https://open.er-api.com https://cdn.jsdelivr.net; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<title>個人資產負債表</title>
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f3864">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要內容</a>
+<header class="top">
+  <div class="brand">個人資產負債表</div>
+  <div class="top-meta" id="top-meta"></div>
+  <button type="button" id="theme-toggle" class="theme-toggle">☾ 深色</button>
+</header>
+<div class="layout">
+  <nav id="nav" aria-label="主選單"></nav>
+  <main id="main" tabindex="-1"><p class="muted">載入中…</p></main>
+</div>
+<div id="bottomnav" class="bottomnav" role="navigation" aria-label="主要功能"></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<noscript><p class="noscript">此網站需要啟用 JavaScript。資料只存在你的瀏覽器中，不會上傳。</p></noscript>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

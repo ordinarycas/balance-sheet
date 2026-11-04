@@ -1,0 +1,45 @@
+// P11 說明
+import { h } from '../dom.js';
+import { section } from '../components/table.js';
+import { APP_VERSION, SCHEMA_VERSION, DEFAULT_ANNUAL_PERIODS } from '../../core/constants.js';
+import { nowTaipeiISO } from '../../core/dates.js';
+
+const li = (t) => h('li', { text: t });
+
+export default function render(app) {
+  return h('div', null, h('h1', { text: '說明' }),
+    section('隱私與資料存放',
+      h('ul', { class: 'plain' },
+        li('你的所有財務資料只存在這個瀏覽器的本機儲存空間（localStorage），不會上傳到任何伺服器，網站本身也不含任何個人資料。'),
+        li('網站沒有登入、沒有分析工具（Analytics）、沒有廣告、不載入外部腳本或字型。'),
+        li('唯一的網路請求是可關閉的公開行情查詢：證交所最近收盤價、USD/TWD 匯率；細節見「P10 設定」。'),
+        li('換瀏覽器或電腦不會同步：請用「P12 資料匯入／匯出」匯出 JSON 備份。JSON 預設是未加密明文，可選擇以密碼加密（AES-256-GCM）；Excel 檔無法加密，請妥善保管。'),
+        li('網站可安裝為 App 並離線使用（PWA）；離線時仍可檢視與編輯，行情與匯率會降級為手動值。'),
+        li('若此網站部署在共用網域（例如 username.github.io），同網域下你的其他網站可讀取同一份本機資料；建議使用自訂網域。'))),
+    section('計算假設',
+      h('ul', { class: 'plain' },
+        li('信貸／保單利息以實際天數 ÷ 365 計；股票質押利息以 ÷ 360 計（可於「P10 設定」調整）。'),
+        li('攤還型借款：月付金＝PMT 四捨五入到指定小數位；末期結清全部餘額。可用「餘額校正」對齊銀行實際餘額。'),
+        li(`年繳利息型（保單借款）：本金不攤還，每年於首次繳款日的同月同日繳息；預設試算 ${DEFAULT_ANNUAL_PERIODS} 年，可在「P05 借款」調整。`),
+        li('美元借款以 USD/TWD 匯率折算 NT$；匯率優先自動取得，失敗時使用手動備援。'),
+        li('股價為證交所「最近一個交易日收盤價」，非即時；取不到時使用手動股價並標示來源。'),
+        li('月薪模擬採月利率＝年利率 ÷ 12 的概算，雪崩法順序依年利率由高到低自動排序，最長 120 個月。'),
+        li('支出一律以負數表示；缺口不會增加債務，另計累計。'))),
+    section('圖表與列印',
+      h('ul', { class: 'plain' },
+        li('圖表引擎可在「P10 設定」或圖表上方切換：Lightweight Charts（預設）、Chart.js、D3.js、ApexCharts；皆為本站內建副本，不連外部 CDN。Nivo 需要 React 與建置流程，與本站零建置的做法不符，故未提供。'),
+        li('手機（≤ 860px）以底部導覽列操作，常用四頁在列上，其餘在「更多」。圖表支援觸控查看數值。'),
+        li('列印／存成 PDF 一律使用淺色，隱藏導覽列與按鈕；圖表會先轉為靜態圖或向量圖再列印。'))),
+    section('進階功能',
+      h('ul', { class: 'plain' },
+        li('借款可設定「利率變更」與「提前還款」（縮短期數或降低月付金）；提前還款日必須是繳款日。'),
+        li('匯入 JSON 可選「逐筆合併」：只新增、略過或更新指定項目，匯入前有預覽並可還原。'),
+        li('修改資料達一定次數或超過 30 天未備份時，頁面頂端會提醒備份，可暫停 7 天。'))),
+    section('版本',
+      h('ul', { class: 'plain' },
+        li(`應用程式版本 ${APP_VERSION}；資料結構版本 ${SCHEMA_VERSION}`),
+        li(`目前時間（台北）${nowTaipeiISO()}`),
+        li(`基準日 ${app.asOf}`))),
+    section('更新紀錄', h('ul', { class: 'plain' }, li('1.1.0　手機底部導覽、四種圖表引擎與列印、PWA／離線、加密匯出、逐筆合併匯入、利率變更與提前還款（資料結構 v2，舊檔自動遷移）、無障礙與 e2e 測試。'), li('1.0.0　首版：12 個頁面、JSON 匯出入（含驗證與遷移）、Excel 匯出、公開行情與匯率（可降級為手動）。'))),
+    h('p', { class: 'note', text: '本工具僅為個人試算，不構成任何投資或財務建議；實際金額請以銀行與券商對帳單為準。' }));
+}
