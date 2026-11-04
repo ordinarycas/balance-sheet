@@ -303,10 +303,8 @@ tr.today td, tr.today { background: var(--today-bg); }
 tr.nextev td { font-weight: 700; }
 tr.nextev td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 button.linklike { background: none; border: 0; padding: 2px 4px; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; min-height: 0; }
-.evform summary { cursor: pointer; font-weight: 600; }
-.evform .formgrid { margin: 10px 0; }
 .formgrid.names { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-@media print { tr.week td, tr.week { background: #eef7f0; } .evform { display: none; } }
+@media print { tr.week td, tr.week { background: #eef7f0; } }
 
 /* 類別篩選標籤、複選框對齊、可拖曳高度的底部面板 */
 input[type=checkbox], input[type=radio] { min-height: 0; width: 18px; height: 18px; padding: 0; margin: 0; accent-color: var(--accent); flex: 0 0 auto; }
@@ -324,3 +322,69 @@ input[type=checkbox], input[type=radio] { min-height: 0; width: 18px; height: 18
   .sheet-grip span { width: 44px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .6; }
   .sheet-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 }
+
+/* 還款進度 */
+.pbar { height: 12px; border-radius: 999px; background: var(--accent-soft); border: 1px solid var(--line); overflow: hidden; margin: 8px 0; }
+.pbar .pfill { display: block; height: 100%; background: var(--c3); border-radius: 999px; }
+.cell-bar { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+.cell-bar .pbar { flex: 1; margin: 0; height: 10px; }
+.cell-bar span { font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: right; }
+.wins li { padding: 3px 0; color: var(--pos); }
+
+/* 時鐘（P15） */
+.clk-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.clk-dial { position: relative; width: min(320px, 86vw); aspect-ratio: 1; }
+.clk-svg { width: 100%; height: 100%; display: block; }
+.clk-face { fill: var(--panel); stroke: var(--line); stroke-width: 3; }
+.clk-tick { stroke: var(--muted); stroke-width: 1; }
+.clk-tick.major { stroke: var(--ink); stroke-width: 2.4; }
+.clk-num { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.clk-hand { stroke-linecap: round; }
+.clk-hand.hour { stroke: var(--ink); stroke-width: 5; }
+.clk-hand.minute { stroke: var(--ink); stroke-width: 3.2; }
+.clk-hand.second { stroke: var(--neg); stroke-width: 1.6; }
+.clk-pin { fill: var(--neg); }
+.clk-digital { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.clk-pops { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.clk-pop { position: absolute; transform: translate(-50%, -50%); padding: 2px 8px; border-radius: 999px; background: var(--panel); border: 1px solid var(--neg); color: var(--neg); font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; animation: clk-float 1.4s ease-out forwards; }
+@keyframes clk-float { 0% { opacity: 0; transform: translate(-50%, -20%); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -160%); } }
+.clk-toggle { justify-content: center; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .clk-pop { animation: none; } }
+
+/* 堆疊面積圖與熱力圖 */
+.ar-fig, .hm-fig { margin: 10px 0 18px; }
+.ar-fig figcaption, .hm-fig figcaption { font-weight: 600; margin-bottom: 6px; }
+.ar-svg { width: 100%; max-width: 680px; height: auto; display: block; touch-action: pan-y; }
+.ar-grid { stroke: var(--line); stroke-width: 1; }
+.ar-base { stroke: var(--muted); stroke-width: 1; }
+.ar-axis { fill: var(--muted); font-size: 10px; }
+.ar { stroke: var(--panel); stroke-width: .8; fill-opacity: .88; }
+.ar0 { fill: var(--c1); } .ar1 { fill: var(--c2); } .ar2 { fill: var(--c3); } .ar3 { fill: var(--c4); }
+.ar4 { fill: var(--c5); } .ar5 { fill: var(--c6); } .ar6 { fill: var(--c7); } .ar7 { fill: var(--c8); }
+.ar-guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
+.ar-dot { fill: var(--ink); }
+.ar-range { width: 100%; max-width: 680px; margin: 6px 0 0; }
+.ar-readout { max-width: 680px; font-size: .9rem; }
+.ar-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.ar-list li { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; border-bottom: 1px solid var(--line); }
+.ar-list li span:not(.dv) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ar-list i, .legend i.sw0, .legend i.sw1, .legend i.sw2, .legend i.sw3, .legend i.sw4, .legend i.sw5, .legend i.sw6, .legend i.sw7 { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.ar-list .dv { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.ar-table { margin-top: 8px; }
+.ar-table summary { cursor: pointer; color: var(--accent); }
+table.heat { border-collapse: separate; border-spacing: 2px; width: 100%; }
+table.heat th.hm-row { text-align: left; white-space: nowrap; font-weight: 500; position: sticky; left: 0; background: var(--panel); z-index: 1; padding-right: 10px; }
+table.heat td.hm { text-align: center; min-width: 44px; border-radius: 4px; color: var(--ink); font-size: .8rem; }
+table.heat td.hm0 { color: var(--muted); }
+table.heat td.hm1 { background: color-mix(in srgb, var(--c1) 10%, var(--panel)); }
+table.heat td.hm2 { background: color-mix(in srgb, var(--c1) 20%, var(--panel)); }
+table.heat td.hm3 { background: color-mix(in srgb, var(--c1) 30%, var(--panel)); }
+table.heat td.hm4 { background: color-mix(in srgb, var(--c1) 40%, var(--panel)); }
+table.heat td.hm5 { background: color-mix(in srgb, var(--c1) 50%, var(--panel)); font-weight: 700; }
+table.heat .hm-tot { font-weight: 600; }
+.hm-scale { display: flex; align-items: center; gap: 4px; font-size: .8rem; color: var(--muted); margin-top: 6px; }
+.hm-scale i { display: inline-block; width: 22px; height: 12px; border-radius: 3px; border: 1px solid var(--line); }
+.hm-scale i.hm1 { background: color-mix(in srgb, var(--c1) 10%, var(--panel)); } .hm-scale i.hm2 { background: color-mix(in srgb, var(--c1) 20%, var(--panel)); }
+.hm-scale i.hm3 { background: color-mix(in srgb, var(--c1) 30%, var(--panel)); } .hm-scale i.hm4 { background: color-mix(in srgb, var(--c1) 40%, var(--panel)); }
+.hm-scale i.hm5 { background: color-mix(in srgb, var(--c1) 50%, var(--panel)); }
+@media print { .ar-range { display: none; } table.heat td.hm1, .hm-scale i.hm1 { background: #eaf0f9; } table.heat td.hm2, .hm-scale i.hm2 { background: #d5e1f3; } table.heat td.hm3, .hm-scale i.hm3 { background: #c0d1ed; } table.heat td.hm4, .hm-scale i.hm4 { background: #abc2e7; } table.heat td.hm5, .hm-scale i.hm5 { background: #96b3e1; } }

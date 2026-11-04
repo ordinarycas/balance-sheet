@@ -1,2 +1,4 @@
 User-agent: *
-Disallow: /
+Allow: /
+
+Sitemap: https://ordinarycas.github.io/balance-sheet/sitemap.xml

@@ -5,6 +5,9 @@ import { dataTable, kpi, section } from '../components/table.js';
 import { barChart, lineChart, legend } from '../components/chart.js';
 import { choiceField, labeled, button } from '../components/forms.js';
 import { donut, ratioBar } from '../components/donut.js';
+import { stackedArea } from '../components/areachart.js';
+import { heatmap } from '../components/heatmap.js';
+import { stackSeries, spendHeatmap } from '../../core/chartdata.js';
 import { balanceSheet, projectIncome, monthlySplit, effectiveIncome } from '../../core/scenario.js';
 
 const HORIZONS = [[12, '12 個月'], [24, '24 個月'], [36, '36 個月'], [60, '60 個月'], [120, '120 個月']];
@@ -99,6 +102,9 @@ export default function render(app) {
     root.appendChild(section(`各筆借款餘額（${mode === 'zero' ? '完全沒有收入' : `固定收入 ${twd(fixedIncome)}`}）`,
       legend(per(cur).map((s) => ({ cls: s.cls, name: s.name }))),
       lineChart({ labels, monthKeys: cur.months, title: '各筆借款餘額走勢', series: per(cur), tipFmt: (v) => twd(v) })));
+    root.appendChild(section('債務結構（堆疊面積圖）',
+      stackedArea({ title: `各筆借款餘額堆疊（${mode === 'zero' ? '完全沒有收入' : `固定收入 ${twd(fixedIncome)}`}）`, labels, series: stackSeries(m.salary.debts, cur.perDebt) }),
+      h('p', { class: 'note', text: '每一層是一筆借款，整體高度＝總負債；層越薄代表那筆越快還清。假設同上：結餘依雪崩法提前還款、利率不變，是情境試算不是預測。移動滑鼠、點選圖表或拖曳「月份」滑桿可看每月數字。' })));
   }
 
   root.appendChild(section(`累計資金缺口（未來 ${horizon} 個月）`,
@@ -137,5 +143,10 @@ export default function render(app) {
         ['全數還清月份（120 個月內）', zero.allPaid ?? '未還清', fixed.allPaid ?? '未還清'],
       ],
     })));
+  // 6. 熱力圖
+  const heat = spendHeatmap(m);
+  root.appendChild(section('每月支出熱力圖',
+    heatmap({ title: `未來 12 個月各項目的現金流出（${m.months[0]} 起）`, ...heat }),
+    h('p', { class: 'note', text: '資料來自「P02 每月支出」與還款表：信用卡、房租、家裡支出與各筆借款的當月還款（本金＋利息）。顏色越深代表該格金額越大，格內也標有數字；可以一眼看出哪幾個月壓力集中，方便提前準備。' })));
   return root;
 }

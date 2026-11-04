@@ -26,7 +26,10 @@ export default function render(app) {
     h('h1', { text: '總覽' }),
     h('p', { class: 'sub', text: `基準日 ${app.asOf}；金額單位 NT$（美元借款以 ${app.usdTwd.toFixed(4)} 折算）` }));
   if (!hasData()) root.appendChild(onboarding(app));
-  else root.appendChild(countdownCards(app));
+  else {
+    root.appendChild(countdownCards(app));
+    if (+app.asOf.slice(8, 10) <= 7) root.appendChild(h('p', { class: 'note' }, '月初了：', h('a', { href: '#/progress', text: '看看上個月的還款回顧與目前進度' }), '。'));
+  }
 
   // 負債表
   const rows = [

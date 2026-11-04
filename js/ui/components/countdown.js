@@ -1,7 +1,8 @@
 // 倒數計時卡片：「近期還款」與「下次發薪」。只有每秒更新文字，不會觸發頁面重繪。
 import { h } from '../dom.js';
 import { twd } from '../fmt.js';
-import { todayTaipei } from '../../core/dates.js';
+import { todayTaipei, dn, iso } from '../../core/dates.js';
+import { progressSummary, spanText } from '../../core/payoff.js';
 import { nextRepayment, nextPayday, remaining, startOfDayMs } from '../../core/countdown.js';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -50,5 +51,13 @@ export function countdownCards(app) {
     ? card('下次發薪', payDate, `${payDate}　每月 ${app.state.settings.payDay} 日${app.state.settings.payDay > 28 ? '（無該日則月底）' : ''}`, null, false)
     : h('div', { class: 'card cd' }, h('div', { class: 'l', text: '下次發薪' }),
       h('div', { class: 'cd-main' }, '尚未設定發薪日：到 ', h('a', { href: '#/settings', text: 'P10 設定' }), ' 填入每月發薪日'));
-  return h('div', { class: 'cdgrid' }, repay, pay);
+  const ps = progressSummary(app.model);
+  let free = null;
+  if (ps.loans.length && ps.payoffDn !== null) {
+    const date = iso(ps.payoffDn);
+    free = date > today
+      ? card('攤還型借款預計還清', date, `${date}（約 ${spanText(ps.payoffDn - dn(today))}）`, `已完成 ${(ps.progress * 100).toFixed(1)}%${ps.otherDebt ? '；不含保單與質押借款' : ''}`, false)
+      : h('div', { class: 'card cd' }, h('div', { class: 'l', text: '攤還型借款' }), h('div', { class: 'cd-main', text: '已全部還清' }));
+  }
+  return h('div', { class: 'cdgrid' }, repay, pay, free);
 }

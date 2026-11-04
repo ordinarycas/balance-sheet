@@ -19,6 +19,9 @@ import { checkForUpdate, applyUpdate, onUpdateState, state as updState } from '.
 const ROUTES = [
   ['overview', 'P01 總覽', () => import('./ui/pages/overview.js')],
   ['charts', 'P13 圖表分析', () => import('./ui/pages/charts.js')],
+  ['progress', 'P14 還款進度', () => import('./ui/pages/progress.js')],
+  ['clock', 'P15 時鐘', () => import('./ui/pages/clock.js')],
+  ['income', 'P16 收入網站資源', () => import('./ui/pages/income.js')],
   ['monthly', 'P02 每月支出', () => import('./ui/pages/monthly.js')],
   ['salary', 'P03 月薪情境', () => import('./ui/pages/salary.js')],
   ['calendar', 'P04 繳費日曆', () => import('./ui/pages/calendar.js')],

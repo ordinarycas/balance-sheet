@@ -14,6 +14,10 @@ export const DEFAULT_PREFS = {
   chartIncomeMode: 'fixed', // 圖表分析的收入情境：fixed（固定收入）| zero（完全沒有收入）
   chartIncome: 0,          // 固定月收入（NT$）；0＝沿用月薪情境第一筆
   chartHorizon: 60,        // 推演月數
+  whatIfMonthly: 0,        // 還款進度頁：每月多還（NT$）試算
+  whatIfLump: 0,           // 還款進度頁：下一期一次多還（NT$）試算
+  goalExtraIncome: 0,      // 還款進度頁：想增加的月收入（NT$）試算
+  clockPop: true,          // 時鐘頁：秒針旁浮出每秒利息
   remindTomorrow: false,   // 明天有應繳項目時提醒（橫幅＋系統通知）
   remindNotifiedDay: '',   // 最近一次送出系統通知的日期（每天一次）
   remindSeenDay: '',       // 最近一次按「知道了」的日期
@@ -35,6 +39,7 @@ export function getPrefs() {
   if (!['lw', 'chartjs', 'd3', 'apex'].includes(p.chartLib)) p.chartLib = 'lw';
   if (!['fixed', 'zero'].includes(p.chartIncomeMode)) p.chartIncomeMode = 'fixed';
   if (![12, 24, 36, 60, 120].includes(p.chartHorizon)) p.chartHorizon = 60;
+  for (const k of ['whatIfMonthly', 'whatIfLump', 'goalExtraIncome']) if (!Number.isFinite(p[k]) || p[k] < 0) p[k] = 0;
   if (!Number.isFinite(p.chartIncome) || p.chartIncome < 0) p.chartIncome = 0;
   cache = p;
   return p;
