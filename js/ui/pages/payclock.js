@@ -6,7 +6,7 @@ import { h } from '../dom.js';
 import { twd, pct } from '../fmt.js';
 import { kpi, section } from '../components/table.js';
 import { choiceField, labeled } from '../components/forms.js';
-import { buildClockPage, fmt5 } from '../components/clock-page.js';
+import { buildClockPage, fmt5, fmt2, fmt4 } from '../components/clock-page.js';
 import { interestPerSecond, payPerSecond, accruedWork, workWindow, inWindow, secondsToEarn, spanSeconds } from '../../core/clock.js';
 import { WAGE } from '../../core/lifetime.js';
 import { daysInMonth, todayTaipei } from '../../core/dates.js';
@@ -65,6 +65,7 @@ export default function render(app) {
   const todayLabel = win ? `今天 00:00 起累積（只算上班時段 ${app.prefs.payStart}–${app.prefs.payEnd}）` : '今天 00:00 起累積';
   return buildClockPage(app, {
     todayLabel,
+    fmtAcc: fmt2, // 「薪資累積」卡片只顯示小數兩位（浮出的氣泡與堆積仍是 5 位）
     title: '薪資時鐘',
     sub: '台北時間。把月薪代入時鐘：秒針每走一秒，就會跳出這一秒累積的薪資，讓你看見「時間本身」的價值；它不是每秒入帳的現金。',
     noun: '薪資',
@@ -85,11 +86,11 @@ export default function render(app) {
     stats: ({ counter }) => [
       section('薪資累積',
         h('div', { class: 'grid clk-accrued-grid' },
-          kpi('每秒', `NT$ ${fmt5(pay.perSecond)}`),
-          kpi('每分鐘', `NT$ ${fmt5(pay.perMinute)}`),
-          kpi('每小時', `NT$ ${fmt5(pay.perHour)}`),
-          kpi('每四小時', `NT$ ${fmt5(pay.perHour * 4)}`),
-          kpi('每日', `NT$ ${fmt5(pay.daily)}`),
+          kpi('每秒', `NT$ ${fmt4(pay.perSecond)}`),
+          kpi('每分鐘', `NT$ ${fmt4(pay.perMinute)}`),
+          kpi('每小時', `NT$ ${fmt2(pay.perHour)}`),
+          kpi('每四小時', `NT$ ${fmt2(pay.perHour * 4)}`),
+          kpi('每日', `NT$ ${fmt2(pay.daily)}`),
           h('div', { class: 'kpi' }, h('div', { class: 'l', text: todayLabel }),
             h('div', { class: 'v' }, 'NT$ ', counter('today').el, h('span', { class: 'sr-only', text: '（每秒更新）' }))),
           h('div', { class: 'kpi' }, h('div', { class: 'l', text: `本月 1 日起累積（月底＝月薪 ${twd(pay.monthly)}）` }),

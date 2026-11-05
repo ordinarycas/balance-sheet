@@ -5,7 +5,10 @@ import { twd, compact } from '../fmt.js';
 import { dataTable } from './table.js';
 import { niceScale } from '../../core/chartdata.js';
 
-const W = 420;
+// 畫布寬度依畫面可用寬度決定（桌面版 100% 寬，文字仍維持原本大小）；手機維持約 420
+let W = 420;
+// 寬畫面略縮小畫布，文字才不會太小
+const chartWidth = () => { const m = typeof document !== 'undefined' ? document.getElementById('main') : null; const w = m ? m.clientWidth - 34 : 0; return w > 0 ? Math.max(320, Math.min(1400, Math.round(w > 700 ? w / 1.35 : w))) : 420; };
 const txt = (cls, attrs, s) => { const t = svg('text', { class: cls, ...attrs }); t.textContent = s; return t; };
 const age1 = (v) => `${v.toFixed(1)} 歲`;
 
@@ -27,6 +30,7 @@ export const STAGES = [
  * @param {{age:number, endAge:number, retireAge:number, extra?:{name:string,from:number,to:number}[]}} o
  */
 export function lifeTimeline({ age, endAge, retireAge, extra = [] }) {
+  W = chartWidth();
   const ALL = [...STAGES, ...extra];
   const L = 12;
   const iw = W - L * 2;
@@ -158,6 +162,7 @@ function hoverLayer({ M, W, H, x0, endAge, x, y, series }) {
  * @param {{age:number, endAge:number, retireAge:number, monthly:number}} o
  */
 export function incomeCurve({ age, endAge, retireAge, monthly, startAge = 0, baseMonthly = 0, baseFrom = 18 }) {
+  W = chartWidth();
   const M = { l: 48, r: 12, t: 14, b: 32 };
   const H = 240;
   const stop = Math.max(Math.min(retireAge, endAge), age);
@@ -239,6 +244,7 @@ export function incomeCurve({ age, endAge, retireAge, monthly, startAge = 0, bas
  * @param {{label:string, from:number, to:number, kind:'pos'|'neg'|'sum'}[]} steps
  */
 export function waterfall(steps, title = '資源增減圖') {
+  W = chartWidth();
   const M = { l: 12, r: 12 };
   const rowH = 44;
   const H = steps.length * rowH + 8;

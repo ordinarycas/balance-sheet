@@ -10,6 +10,8 @@ import { todayTaipei } from '../../core/dates.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 /** 累積金額一律顯示到小數點第 5 位。 */
+export const fmt2 = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const fmt4 = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 export const fmt5 = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 5, maximumFractionDigits: 5 });
 
 function face() {
@@ -101,7 +103,7 @@ export function buildClockPage(app, cfg) {
   const counters = new Map();
   const ctx = {
     counter(key) {
-      if (!counters.has(key)) counters.set(key, rollingNumber(fmt5(0), { animate: !reduce }));
+      if (!counters.has(key)) counters.set(key, rollingNumber((cfg.fmtAcc ?? fmt5)(0), { animate: !reduce }));
       return counters.get(key);
     },
   };
@@ -194,7 +196,7 @@ export function buildClockPage(app, cfg) {
     if (counters.size && (ts - lastAcc > 100 || secInt !== lastSec)) {
       lastAcc = ts;
       const vals = cfg.counters(c, ymd());
-      for (const [k, r] of counters) if (k in vals) r.set(fmt5(vals[k]));
+      for (const [k, r] of counters) if (k in vals) r.set((cfg.fmtAcc ?? fmt5)(vals[k]));
     }
     if (secInt !== lastSec) {
       const first = lastSec === -1;

@@ -36,7 +36,7 @@ nav a { display: block; padding: 8px 12px; border-radius: 6px; color: var(--ink)
 nav a:hover { background: var(--accent-soft); }
 nav a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 nav .sep { height: 1px; background: var(--line); margin: 8px 6px; }
-main { padding: 20px 24px 64px; min-width: 0; max-width: 1280px; }
+main { padding: 20px 24px 64px; min-width: 0; }
 main:focus { outline: none; }
 h1 { font-size: 1.45rem; margin: 0 0 4px; color: var(--accent); }
 h2 { font-size: 1.1rem; margin: 22px 0 8px; color: var(--accent); }
@@ -444,6 +444,10 @@ table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
 .lifeform .field, .lifeform .field input, .lifeform .field select { max-width: 100%; box-sizing: border-box; }
 .lifeform .clk-toggle { justify-content: flex-start; align-items: flex-start; flex-wrap: nowrap; }
 .lifeform .clk-toggle input { margin-top: 4px; flex: none; }
+.lifeform .incomebar { align-items: flex-start; }
+.lifeform .incomebar > * { flex: 1 1 200px; }
+.lifeform .field { display: flex; flex-direction: column; gap: 4px; }
+.lifeform .field input, .lifeform .field select { width: 100%; }
 @media (max-width: 640px) {
   .lifeform .incomebar { flex-direction: column; align-items: stretch; }
   .lifeform .incomebar > * { width: 100%; }
@@ -453,7 +457,7 @@ table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
 /* P17 圖表 */
 .lc-fig { margin: 10px 0 18px; }
 .lc-fig figcaption { font-weight: 600; margin-bottom: 6px; }
-.lc-svg { width: 100%; max-width: 680px; height: auto; display: block; }
+.lc-svg { width: 100%; height: auto; display: block; }
 .lc-past { fill: var(--muted); } .lc-work { fill: var(--c1); } .lc-rest { fill: var(--c3); }
 .lc-fig .sw.lc-past { background: var(--muted); } .lc-fig .sw.lc-work { background: var(--c1); } .lc-fig .sw.lc-rest { background: var(--c3); }
 .lc-tick { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }

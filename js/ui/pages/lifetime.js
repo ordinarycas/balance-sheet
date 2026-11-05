@@ -20,9 +20,11 @@ export default function render(app) {
     h('p', { class: 'sub', text: '輸入性別與生日，用國民生命表的平均餘命，算出「如果一直只領基本工資，這輩子至少能賺多少」。這是用來理解時間與收入關係的參考數字，不是預測。' }));
 
   // ---- 輸入 ----
-  const birth = h('input', { type: 'date', class: 'in', max: today, value: p.lifeBirth, 'aria-label': '生日' });
+  const yearsFrom = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return `${String(y + n).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`; };
+  const minBirth = yearsFrom(today, -150); const maxBirth = yearsFrom(today, 150); // 當日 ±150 年
+  const birth = h('input', { type: 'date', class: 'in', min: minBirth, max: maxBirth, value: p.lifeBirth, 'aria-label': '生日' });
   birth.addEventListener('change', () => {
-    if (birth.value && !(ageOn(birth.value, today) !== null)) { birth.value = p.lifeBirth; app.toast('生日不能晚於今天'); return; }
+    if (birth.value && (birth.value < minBirth || birth.value > maxBirth || Number.isNaN(Date.parse(birth.value + 'T00:00:00Z')))) { birth.value = p.lifeBirth; app.toast(`生日要在 ${minBirth} 到 ${maxBirth} 之間（今天前後 150 年）`); return; }
     app.setPref('lifeBirth', birth.value);
   });
   const retire = h('input', { type: 'number', class: 'in', min: 40, max: 80, step: 1, value: p.lifeRetire, 'aria-label': '預計退休年齡' });
