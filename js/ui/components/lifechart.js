@@ -141,7 +141,13 @@ function hoverLayer({ M, W, H, x0, endAge, x, y, series }) {
     g.setAttribute('visibility', 'visible');
   };
   overlay.addEventListener('pointermove', move);
-  overlay.addEventListener('pointerdown', move);
+  overlay.addEventListener('pointerdown', (e) => {
+    try { overlay.setPointerCapture(e.pointerId); } catch { /* 略過 */ }
+    move(e);
+  });
+  // 長按／拖曳不要選取文字，也不要跳出系統選單（觸控長按會觸發 contextmenu）
+  for (const ev of ['selectstart', 'contextmenu', 'dragstart']) overlay.addEventListener(ev, (e) => e.preventDefault());
+  overlay.addEventListener('mousedown', (e) => e.preventDefault());
   overlay.addEventListener('pointerleave', () => g.setAttribute('visibility', 'hidden'));
   overlay.addEventListener('pointercancel', () => g.setAttribute('visibility', 'hidden'));
   return { g, overlay };

@@ -491,3 +491,5 @@ table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
 .lc-hdot { fill: var(--c1); stroke: var(--panel); stroke-width: 2; }
 .lc-hdot.base { fill: var(--muted); }
 .lc-hdot.late { fill: var(--c2, var(--muted)); }
+/* 人生圖表：長按或拖曳時不要選取文字、不要跳出系統選單 */
+.lc-svg, .lc-svg * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
