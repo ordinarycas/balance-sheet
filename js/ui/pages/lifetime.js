@@ -86,6 +86,12 @@ export default function render(app) {
       kpi(`從 ${lateAge} 歲才開始的累積收入`, twd(lateIncome), 'bad'),
       kpi('晚開始少掉的', twd(r.income - lateIncome)),
       kpi('晚了幾年', yrs(lateAge - age)));
+    // 對照：從 18 歲就開始領基本工資（現行），一路做到退休
+    const baseIncome = WAGE.current.monthly * Math.round(Math.max(stopAge - 18, 0) * 12);
+    const baseCompare = stopAge > 18 ? h('div', { class: 'grid' },
+      kpi('對照：18 歲起領基本工資，退休前累積', twd(baseIncome)),
+      kpi('與上方「從現在開始」的差距', `${baseIncome - r.income >= 0 ? '＋' : '－'}${twd(Math.abs(baseIncome - r.income))}`),
+      kpi('18 歲起到退休的工作年數', yrs(stopAge - 18))) : null;
     const endYear = Number(today.slice(0, 4)) + Math.round(r.lifeLeft);
 
     root.appendChild(section('時間',
@@ -103,7 +109,8 @@ export default function render(app) {
         kpi('退休前還能賺到的總收入', twd(r.income), 'good'),
         kpi('平均分攤到餘命每個月', twd(r.perLifeMonth)),
         kpi('退休後預期還有', yrs(r.retirementYears))),
-      incomeCurve({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, monthly, startAge: p.lifeStart }),
+      incomeCurve({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, monthly, startAge: p.lifeStart, baseMonthly: WAGE.current.monthly, baseFrom: 18 }),
+      baseCompare,
       lateStart,
       monthly <= 0 ? h('p', { class: 'note', text: '月收入是 0，請選擇基本工資或填入自訂金額。' }) : null,
       h('p', { class: 'note', text: `算法：月收入 × 12 × 從現在到退休的年數（${p.lifeRetire} 歲或預期壽命，取較早者）。以今天的新台幣計，稅前，不含調薪、通膨、折現、勞保年金與退休金，也不含失業或中斷工作的時間；這是「只靠基本工資」的保守下限，不是你實際會賺的金額。` })));

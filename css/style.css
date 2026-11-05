@@ -466,3 +466,9 @@ table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
 .lc-fig .sw.lc-late-sw { background: var(--c2); }
 .lc-stage { fill: var(--c2); } .lc-lane.past .lc-stage { fill: var(--muted); opacity: .6; }
 .lc-stg { fill: var(--ink); font-size: 12px; }
+.lc-line.base { stroke: var(--c3); stroke-dasharray: 2 4; stroke-linecap: round; }
+.lc-fig .sw.lc-base-sw { background: var(--c3); }
+.lc-in2.base { fill: var(--pos); }
+.lc-xtick { stroke: var(--muted); stroke-width: 1; opacity: .6; } .lc-xtick.major { opacity: 1; }
+.lc-vgrid { stroke: var(--line); stroke-width: 1; opacity: .6; }
+.lc-today { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }

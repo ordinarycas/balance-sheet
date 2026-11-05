@@ -88,36 +88,73 @@ export function lifeTimeline({ age, endAge, retireAge }) {
  * 累積收入曲線：從現在到退休，每月領固定月收入，累積值是一條斜線；退休後持平。
  * @param {{age:number, endAge:number, retireAge:number, monthly:number}} o
  */
-export function incomeCurve({ age, endAge, retireAge, monthly, startAge = 0 }) {
-  const M = { l: 48, r: 12, t: 12, b: 26 };
-  const H = 220;
+export function incomeCurve({ age, endAge, retireAge, monthly, startAge = 0, baseMonthly = 0, baseFrom = 18 }) {
+  const M = { l: 48, r: 12, t: 14, b: 32 };
+  const H = 240;
   const stop = Math.max(Math.min(retireAge, endAge), age);
   const total = monthly * 12 * (stop - age);
   if (!(total > 0) || endAge - age < 0.1) return h('p', { class: 'note', text: '累積收入曲線：目前沒有可畫的收入（月收入為 0 或已過退休年齡）。' });
-  const { max, ticks } = niceScale(total);
+  const cum = (a, from, m) => m * 12 * Math.max(Math.min(a, stop) - from, 0);
+  const useBase = baseMonthly > 0 && baseFrom < stop;
+  const base = useBase ? cum(stop, baseFrom, baseMonthly) : 0;
+  const late = startAge > age && startAge < stop ? cum(stop, startAge, monthly) : null;
+  const x0 = useBase ? Math.min(age, baseFrom) : age;
+  const { max, ticks } = niceScale(Math.max(total, base));
   const iw = W - M.l - M.r;
   const ih = H - M.t - M.b;
-  const x = (a) => M.l + (iw * (a - age)) / (endAge - age);
+  const x = (a) => M.l + (iw * (a - x0)) / (endAge - x0);
   const y = (v) => M.t + ih - (ih * v) / max;
-  const area = `M${x(age).toFixed(1)},${y(0).toFixed(1)}L${x(stop).toFixed(1)},${y(total).toFixed(1)}L${x(endAge).toFixed(1)},${y(total).toFixed(1)}L${x(endAge).toFixed(1)},${y(0).toFixed(1)}Z`;
-  const line = `M${x(age).toFixed(1)},${y(0).toFixed(1)}L${x(stop).toFixed(1)},${y(total).toFixed(1)}L${x(endAge).toFixed(1)},${y(total).toFixed(1)}`;
+  const P = (pts) => `M${pts.map(([a, v]) => `${x(a).toFixed(1)},${y(v).toFixed(1)}`).join('L')}`;
+  const mainPts = [[age, 0], [stop, total], [endAge, total]];
+  const area = `${P(mainPts)}L${x(endAge).toFixed(1)},${y(0).toFixed(1)}Z`;
   const grid = ticks.map((t) => svg('g', null,
     svg('line', { class: 'lc-grid', x1: M.l, x2: W - M.r, y1: y(t), y2: y(t) }),
     txt('lc-axis', { x: M.l - 5, y: y(t) + 3.5, 'text-anchor': 'end' }, compact(t) || '0')));
-  const xs = [{ a: age, anchor: 'start' }, ...(stop > age + 1 && stop < endAge - 1 ? [{ a: stop, anchor: 'middle' }] : []), { a: endAge, anchor: 'end' }];
-  const xl = xs.map((p) => txt('lc-axis', { x: x(p.a).toFixed(1), y: H - 8, 'text-anchor': p.anchor }, `${p.a.toFixed(0)} 歲`));
-  const late = startAge > age && startAge < stop ? monthly * 12 * (stop - startAge) : null;
-  const lateLine = late === null ? null : svg('path', { class: 'lc-line late', d: `M${x(age).toFixed(1)},${y(0).toFixed(1)}L${x(startAge).toFixed(1)},${y(0).toFixed(1)}L${x(stop).toFixed(1)},${y(late).toFixed(1)}L${x(endAge).toFixed(1)},${y(late).toFixed(1)}` });
+
+  // X 軸：每 1 歲一個小刻度，每 5 歲一個長刻度與直線，標籤每 5（跨度大時每 10）歲
+  const span = endAge - x0;
+  const labelStep = span > 45 ? 10 : 5;
+  const xAxis = [];
+  for (let a = Math.ceil(x0); a <= endAge; a++) {
+    const major = a % 5 === 0;
+    xAxis.push(svg('line', { class: major ? 'lc-xtick major' : 'lc-xtick', x1: x(a).toFixed(1), x2: x(a).toFixed(1), y1: y(0), y2: y(0) + (major ? 6 : 3) }));
+    if (major) xAxis.push(svg('line', { class: 'lc-vgrid', x1: x(a).toFixed(1), x2: x(a).toFixed(1), y1: M.t, y2: y(0) }));
+    if (a % labelStep === 0) xAxis.push(txt('lc-axis', { x: x(a).toFixed(1), y: H - 14, 'text-anchor': 'middle' }, String(a)));
+  }
+  xAxis.push(txt('lc-axis', { x: W - M.r, y: H - 2, 'text-anchor': 'end' }, '年齡（歲）；每小格 1 歲'));
+
+  const today = age > x0 + 0.5 ? svg('g', null,
+    svg('line', { class: 'lc-today', x1: x(age).toFixed(1), x2: x(age).toFixed(1), y1: M.t, y2: y(0) }),
+    txt('lc-axis', { x: (x(age) + 3).toFixed(1), y: M.t + 9, 'text-anchor': 'start' }, '今天')) : null;
+
+  const baseLine = useBase ? svg('path', { class: 'lc-line base', d: P([[baseFrom, 0], [stop, base], [endAge, base]]) }) : null;
+  const lateLine = late === null ? null : svg('path', { class: 'lc-line late', d: P([[age, 0], [startAge, 0], [stop, late], [endAge, late]]) });
   const dot = svg('circle', { class: 'lc-dot', cx: x(stop).toFixed(1), cy: y(total).toFixed(1), r: 4 });
-  const note = txt('lc-in2', { x: Math.min(x(stop), W - M.r - 4).toFixed(1), y: (y(total) - 8).toFixed(1), 'text-anchor': stop > endAge - (endAge - age) * 0.3 ? 'end' : 'middle' }, twd(total));
-  const label = `累積收入曲線：從 ${age1(age)} 到 ${age1(stop)}，月收入 ${twd(monthly)}，累積到 ${twd(total)}，之後持平到 ${age1(endAge)}`;
+  const nearEnd = stop > endAge - (endAge - x0) * 0.3;
+  const note = txt('lc-in2', { x: Math.min(x(stop), W - M.r - 4).toFixed(1), y: (y(total) - 8).toFixed(1), 'text-anchor': nearEnd ? 'end' : 'middle' }, twd(total));
+  const baseNote = useBase && Math.abs(y(base) - y(total)) > 16 ? txt('lc-in2 base', { x: Math.min(x(stop), W - M.r - 4).toFixed(1), y: (y(base) - 8).toFixed(1), 'text-anchor': nearEnd ? 'end' : 'middle' }, twd(base)) : null;
+
+  const label = `累積收入曲線：從 ${age1(age)} 開始月收入 ${twd(monthly)}，到 ${age1(stop)} 累積 ${twd(total)}`
+    + (useBase ? `；對照：從 ${baseFrom} 歲就領基本工資 ${twd(baseMonthly)}，到 ${age1(stop)} 累積 ${twd(base)}` : '')
+    + (late !== null ? `；從 ${startAge} 歲才開始則累積 ${twd(late)}` : '') + `；橫軸為年齡，每 1 歲一小格，到 ${age1(endAge)}`;
   const pic = svg('svg', { class: 'lc-svg', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label },
-    ...grid, svg('path', { class: 'lc-area', d: area }), svg('path', { class: 'lc-line', d: line }), lateLine,
-    svg('line', { class: 'lc-base', x1: M.l, x2: W - M.r, y1: y(0), y2: y(0) }), ...xl, dot, note);
-  const rows = [age, age + (stop - age) / 4, age + (stop - age) / 2, age + ((stop - age) * 3) / 4, stop].map((a) => ({ a, v: monthly * 12 * (a - age) }));
-  const table = h('details', { class: 'ar-table no-print' }, h('summary', { text: '以表格查看數字' }),
-    dataTable({ label: '累積收入（數字）', cols: [{ label: '年齡', get: (r) => age1(r.a) }, { label: '累積收入', get: (r) => r.v, fmt: (v) => twd(v), num: true }], rows }));
-  return h('figure', { class: 'lc-fig' }, h('figcaption', { text: '累積收入曲線（月收入固定、不含調薪與通膨）' }), late === null ? null : h('div', { class: 'legend' }, h('span', null, h('i', { class: 'sw sw0' }), '從現在開始'), h('span', null, h('i', { class: 'sw lc-late-sw' }), `從 ${startAge} 歲才開始（虛線）`)), pic, table);
+    ...grid, svg('path', { class: 'lc-area', d: area }), baseLine, svg('path', { class: 'lc-line', d: P(mainPts) }), lateLine,
+    svg('line', { class: 'lc-base', x1: M.l, x2: W - M.r, y1: y(0), y2: y(0) }), ...xAxis, today, dot, note, baseNote);
+
+  const legend = h('div', { class: 'legend' },
+    h('span', null, h('i', { class: 'sw sw0' }), `從現在開始（月收入 ${twd(monthly)}）`),
+    useBase ? h('span', null, h('i', { class: 'sw lc-base-sw' }), `對照：${baseFrom} 歲起領基本工資 ${twd(baseMonthly)}（點線）`) : null,
+    late === null ? null : h('span', null, h('i', { class: 'sw lc-late-sw' }), `從 ${startAge} 歲才開始（虛線）`));
+
+  const ages = [];
+  for (let a = Math.ceil(x0 / 5) * 5; a < stop; a += 5) ages.push(a);
+  ages.push(stop);
+  const rows = ages.map((a) => ({ a, now: cum(a, age, monthly), base: useBase ? cum(a, baseFrom, baseMonthly) : null, late: late === null ? null : cum(a, startAge, monthly) }));
+  const cols = [{ label: '年齡', get: (r) => age1(r.a) }, { label: '從現在開始', get: (r) => r.now, fmt: (v) => twd(v), num: true }];
+  if (useBase) cols.push({ label: `${baseFrom} 歲起基本工資`, get: (r) => r.base, fmt: (v) => twd(v), num: true });
+  if (late !== null) cols.push({ label: `${startAge} 歲才開始`, get: (r) => r.late, fmt: (v) => twd(v), num: true });
+  const table = h('details', { class: 'ar-table no-print' }, h('summary', { text: '以表格查看數字' }), dataTable({ label: '累積收入（數字）', cols, rows }));
+  return h('figure', { class: 'lc-fig' }, h('figcaption', { text: '累積收入曲線（月收入固定、不含調薪與通膨）' }), legend, pic, table);
 }
 
 /**
