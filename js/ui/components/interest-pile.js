@@ -26,7 +26,7 @@ function load(day) {
 export async function createInterestPile({ stage, layer, dial, digital, cap, day, onChange }) {
   await loadScript('matter.min.js');
   const M = window.Matter;
-  const { Engine, Bodies, Body, Composite, Events, Sleeping } = M;
+  const { Engine, Bodies, Body, Composite, Constraint, Events, Sleeping } = M;
 
   const sr = stage.getBoundingClientRect();
   const W = sr.width;
@@ -162,8 +162,66 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
     if (did) save();
   }
 
+  // ── 拖曳：滑鼠按住或手指按住一顆利息，用彈簧拉著它走；放開就依當下速度甩出去 ──
+  /** @type {null | {id:number, b:any, c:any, pid:number}} */
+  let drag = null;
+  const pointOf = (e) => {
+    const r = layer.getBoundingClientRect();
+    return { x: Math.max(0, Math.min(W, e.clientX - r.left)), y: Math.max(0, Math.min(H, e.clientY - r.top)) };
+  };
+  function endDrag() {
+    if (!drag) return;
+    Composite.remove(world, drag.c);
+    drag.b.el.classList.remove('drag');
+    const v = drag.b.body.velocity;
+    const sp = Math.hypot(v.x, v.y);
+    if (sp > 22) Body.setVelocity(drag.b.body, { x: (v.x * 22) / sp, y: (v.y * 22) / sp }); // 甩太快會穿牆，限速
+    drag = null;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+  }
+  function onMove(e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    const p = pointOf(e);
+    drag.c.pointA.x = p.x;
+    drag.c.pointA.y = p.y;
+  }
+  function onUp(e) { if (!drag || e.pointerId === drag.pid) endDrag(); }
+  function onDown(e) {
+    if (disposed || drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const el = e.target instanceof Element ? e.target.closest('.clk-bub') : null;
+    if (!el || el.classList.contains('fade')) return;
+    const entry = [...live.entries()].find(([, v]) => v.el === el);
+    if (!entry) return;
+    e.preventDefault();
+    const [id, b] = entry;
+    const p = pointOf(e);
+    const c = Constraint.create({
+      pointA: { x: p.x, y: p.y },
+      bodyB: b.body,
+      pointB: { x: p.x - b.body.position.x, y: p.y - b.body.position.y },
+      stiffness: 0.18, damping: 0.12, length: 0,
+    });
+    Composite.add(world, c);
+    Sleeping.set(b.body, false);
+    el.classList.add('drag');
+    drag = { id, b, c, pid: e.pointerId };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  }
+  layer.addEventListener('pointerdown', onDown);
+
   function step(dtMs) {
     if (disposed) return;
+    if (drag) {
+      if (!live.has(drag.id)) endDrag(); // 被合併或淘汰了
+      else {
+        drag.c.bodyB = drag.b.body; // 尺寸改變時 body 會被換掉
+        Sleeping.set(drag.b.body, false);
+      }
+    }
     Engine.update(engine, Math.min(Math.max(dtMs, 1), 33));
     flushMerges();
     for (const b of live.values()) place(b);
@@ -177,6 +235,8 @@ export async function createInterestPile({ stage, layer, dial, digital, cap, day
   }
 
   function dispose() {
+    endDrag();
+    layer.removeEventListener('pointerdown', onDown);
     disposed = true;
     Events.off(engine);
     Composite.clear(world, false);
