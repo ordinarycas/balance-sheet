@@ -38,6 +38,15 @@ export default function render(app) {
     if (!Number.isFinite(v) || v < 10 || v > 80) { start.value = p.lifeStart || ''; app.toast('請輸入 10 到 80 的整數，或留空代表從現在開始'); return; }
     app.setPref('lifeStart', v);
   });
+  const kid = h('input', { type: 'checkbox', checked: p.lifeKid, 'aria-label': '有小孩' });
+  kid.addEventListener('change', () => app.setPref('lifeKid', kid.checked));
+  const kidAge = h('input', { type: 'number', class: 'in', min: 15, max: 60, step: 1, value: p.lifeKidAge || '', placeholder: '例如 30', 'aria-label': '幾歲生育', disabled: !p.lifeKid });
+  kidAge.addEventListener('change', () => {
+    if (kidAge.value === '') { app.setPref('lifeKidAge', 0); return; }
+    const v = Math.round(Number(kidAge.value));
+    if (!Number.isFinite(v) || v < 15 || v > 60) { kidAge.value = p.lifeKidAge || ''; app.toast('請輸入 15 到 60 的整數'); return; }
+    app.setPref('lifeKidAge', v);
+  });
   const custom = h('input', { type: 'number', class: 'in', min: 0, step: 1000, value: p.lifeMonthly || '', placeholder: '例如 40000', 'aria-label': '自訂月收入（NT$）', disabled: p.lifeWage !== 'custom' });
   custom.addEventListener('change', () => {
     const v = custom.value === '' ? 0 : Math.round(Number(custom.value));
@@ -53,6 +62,9 @@ export default function render(app) {
       labeled('生日', birth),
       labeled('預計退休年齡', retire),
       labeled('從幾歲才開始存錢（留空＝現在）', start)),
+    h('div', { class: 'incomebar' },
+      h('label', { class: 'row clk-toggle' }, kid, h('span', { text: '有小孩（或打算生育）：在時間軸畫出育兒區間' })),
+      labeled('幾歲生育（孩子出生時你幾歲）', kidAge)),
     h('div', { class: 'incomebar' },
       labeled('月收入', choiceField({
         label: '月收入來源', value: p.lifeWage,
@@ -94,13 +106,26 @@ export default function render(app) {
       kpi('18 歲起到退休的工作年數', yrs(stopAge - 18))) : null;
     const endYear = Number(today.slice(0, 4)) + Math.round(r.lifeLeft);
 
+    const extra = [];
+    if (p.lifeSex === 'female') extra.push({ name: '35 歲以上生產風險較高', from: 35, to: 45 });
+    let kidNote = null;
+    if (p.lifeKid) {
+      if (p.lifeKidAge) {
+        const k = p.lifeKidAge;
+        extra.push({ name: '育兒區間（孩子 20 歲成年）', from: k, to: k + 20 });
+        const overlap = Math.max(Math.min(k + 20, p.lifeRetire) - Math.max(k, age), 0);
+        kidNote = h('p', { class: 'note', text: `育兒區間：你 ${k}–${k + 20} 歲，孩子 20 歲成年時你 ${k + 20} 歲；其中約 ${overlap.toFixed(1)} 年落在「現在到退休」之間。這是把 20 年當成育兒期的簡化假設，不含大學以後的支援。` });
+      } else kidNote = h('p', { class: 'note', text: '已勾選有小孩：請填「幾歲生育」，就會在時間軸畫出育兒區間。' });
+    }
+    if (p.lifeSex === 'female') kidNote = h('div', null, kidNote, h('p', { class: 'note', text: '「35 歲以上」是常見的高齡生產分界，只是統計上的風險提醒，不是診斷或決定；實際請與婦產科醫師討論。' }));
     root.appendChild(section('時間',
       h('div', { class: 'grid' },
         kpi('目前年齡', yrs(age)),
         kpi(`平均餘命（${p.lifeSex === 'male' ? '男' : '女'}）`, yrs(r.lifeLeft)),
         kpi('平均預期壽命到', `${(age + r.lifeLeft).toFixed(1)} 歲（約 ${endYear} 年）`),
         kpi(r.retired ? '已到退休年齡' : `距離退休（${p.lifeRetire} 歲）`, r.retired ? '—' : `${yrs(r.workYears)}（${r.workMonths} 個月）`)),
-      lifeTimeline({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire }),
+      lifeTimeline({ age, endAge: age + r.lifeLeft, retireAge: p.lifeRetire, extra }),
+      kidNote,
       h('p', { class: 'note', text: `平均餘命來自「${LIFE_TABLE.source}」：同年齡、同性別全體人口的平均，不是對你個人壽命的預測；表中只有每 10 歲一個數字，其間以線性內插估計。` })));
 
     root.appendChild(section('人生最低收入',

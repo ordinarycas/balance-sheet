@@ -42,3 +42,58 @@ export function smallMoney(v) {
   const d = a >= 100 ? 0 : a >= 1 ? 2 : a >= 0.01 ? 3 : 4;
   return v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
+
+// ---- 薪資時鐘：把月薪代入（假設：月薪平均分攤到每一天、每一秒；實際發薪日以公司為準）----
+
+/** 月薪 → 每日／每秒／每分鐘／每小時。每日＝月薪 ÷ 當月天數，所以整個月累積剛好等於月薪。 */
+export function payPerSecond(monthly, daysInMonth) {
+  const m = Number.isFinite(monthly) && monthly > 0 ? monthly : 0;
+  const days = Number.isFinite(daysInMonth) && daysInMonth >= 28 ? Math.round(daysInMonth) : 30;
+  const daily = m / days;
+  return { monthly: m, days, daily, perSecond: daily / DAY_S, perMinute: daily / 1440, perHour: daily / 24 };
+}
+
+/** 本月 1 日 00:00（台北時間）起累積；dayOfMonth 從 1 起算。 */
+export function accruedMonth(daily, dayOfMonth, secOfDay) {
+  return daily * (Math.max(dayOfMonth, 1) - 1) + accruedToday(daily, secOfDay);
+}
+
+/** 賺到 amount 元要多少秒；每秒收入為 0 時回傳 null。 */
+export function secondsToEarn(amount, perSecond) {
+  return perSecond > 0 && Number.isFinite(amount) && amount >= 0 ? amount / perSecond : null;
+}
+
+/** 把秒數說成「約 N 秒／分鐘／小時」。 */
+export function spanSeconds(s) {
+  if (s === null || !Number.isFinite(s)) return '—';
+  if (s < 90) return `約 ${Math.max(1, Math.round(s))} 秒`;
+  if (s < 5400) return `約 ${Math.round(s / 60)} 分鐘`;
+  return `約 ${(s / 3600).toFixed(1)} 小時`;
+}
+
+// ---- 上下班時間：有設定時，薪資只在上班時段累積（同一天內，下班時間需晚於上班時間）----
+
+/** 'HH:MM' → 當天第幾秒；格式不對回傳 null。 */
+export function hhmmToSec(s) {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(s ?? ''));
+  return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 : null;
+}
+
+/** 上下班時間 → {startSec,endSec,workSec}；沒設定或不合理（下班不晚於上班）回傳 null＝整天。 */
+export function workWindow(startStr, endStr) {
+  const a = hhmmToSec(startStr);
+  const b = hhmmToSec(endStr);
+  return a !== null && b !== null && b > a ? { startSec: a, endSec: b, workSec: b - a } : null;
+}
+
+/** 今天（00:00 起）已經在上班時段內累積的薪資。win 為 null 時＝整天平均。 */
+export function accruedWork(daily, win, secOfDay) {
+  if (!win) return accruedToday(daily, secOfDay);
+  const worked = Math.min(Math.max(secOfDay - win.startSec, 0), win.workSec);
+  return (daily * worked) / win.workSec;
+}
+
+/** 現在是否在上班時段內（沒設定＝一直是）。 */
+export function inWindow(win, secOfDay) {
+  return !win || (secOfDay >= win.startSec && secOfDay < win.endSec);
+}

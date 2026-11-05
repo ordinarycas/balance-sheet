@@ -23,9 +23,11 @@ export const STAGES = [
 
 /**
  * 人生時間軸：一條橫條，依序是「已走過」「還在工作」「退休後」；下方的標籤高低錯開，再接著一排排的學制／時期區間。
- * @param {{age:number, endAge:number, retireAge:number}} o
+ * extra：額外的區間（例如育兒、35 歲以上生產風險），格式同 STAGES。
+ * @param {{age:number, endAge:number, retireAge:number, extra?:{name:string,from:number,to:number}[]}} o
  */
-export function lifeTimeline({ age, endAge, retireAge }) {
+export function lifeTimeline({ age, endAge, retireAge, extra = [] }) {
+  const ALL = [...STAGES, ...extra];
   const L = 12;
   const iw = W - L * 2;
   const end = Math.max(endAge, age + 0.1);
@@ -65,7 +67,7 @@ export function lifeTimeline({ age, endAge, retireAge }) {
   // 學制／時期：每項一排，標籤放在區間右側（放不下就放左側），不與其他排重疊
   const LANE_Y = 96;
   const laneH = 17;
-  const lanes = STAGES.filter((st) => st.from < end).map((st, i) => {
+  const lanes = ALL.filter((st) => st.from < end).map((st, i) => {
     const y = LANE_Y + i * laneH;
     const x1 = x(st.from);
     const x2 = x(Math.min(st.to, end));
@@ -77,7 +79,7 @@ export function lifeTimeline({ age, endAge, retireAge }) {
       txt('lc-stg', { x: (right ? x2 + 4 : x1 - 4).toFixed(1), y: y + 8.5, 'text-anchor': right ? 'start' : 'end' }, `${st.name} ${st.from}–${st.to} 歲`));
   });
   const H = LANE_Y + lanes.length * laneH + 4;
-  const label = `人生時間軸：現在 ${age1(age)}；${segs.map((s) => `${s.name} ${s.years.toFixed(1)} 年`).join('，')}；平均預期壽命到 ${age1(end)}。下方標出一般學制的典型年齡：${STAGES.map((st) => `${st.name} ${st.from} 到 ${st.to} 歲`).join('、')}`;
+  const label = `人生時間軸：現在 ${age1(age)}；${segs.map((s) => `${s.name} ${s.years.toFixed(1)} 年`).join('，')}；平均預期壽命到 ${age1(end)}。下方標出一般學制的典型年齡：${ALL.map((st) => `${st.name} ${st.from} 到 ${st.to} 歲`).join('、')}`;
   const pic = svg('svg', { class: 'lc-svg', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label }, ...bars, ...inner, ...ticks, ...lanes);
   const legend = h('div', { class: 'legend' }, segs.map((s) => h('span', null, h('i', { class: `sw ${s.cls}` }), `${s.name} ${s.years.toFixed(1)} 年`)));
   return h('figure', { class: 'lc-fig' }, h('figcaption', { text: '人生時間軸（平均餘命，不是個人預測）' }), legend, pic,

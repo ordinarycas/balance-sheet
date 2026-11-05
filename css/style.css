@@ -409,9 +409,14 @@ table.dayheat td.hm-empty { background: none; }
 .clk-bub { position: absolute; left: 0; top: 0; display: grid; place-items: center; border-radius: 999px; line-height: 1; box-sizing: border-box; background: color-mix(in srgb, var(--neg) 14%, var(--panel)); border: 1px solid var(--neg); color: var(--neg); font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; will-change: transform; }
 .clk-bub { pointer-events: auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .clk-bub.drag { cursor: grabbing; z-index: 1; box-shadow: 0 3px 10px rgba(0, 0, 0, .25); }
+.clk-bub.squeeze { box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 45%, transparent); }
 .clk-bub.fade { pointer-events: none; opacity: 0; transition: transform .3s ease-in, opacity .3s ease-in; }
 .clk-bub.merge { animation: clk-merge .35s ease-out; }
-@keyframes clk-merge { 0% { box-shadow: 0 0 0 0 var(--neg); } 40% { box-shadow: 0 0 0 6px transparent; filter: brightness(1.15); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes clk-merge { 0% { box-shadow: 0 0 0 0 currentColor; } 40% { box-shadow: 0 0 0 6px transparent; filter: brightness(1.15); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.clk-tone-pos .clk-hand.second { stroke: var(--pos); }
+.clk-tone-pos .clk-pin { fill: var(--pos); }
+.clk-tone-pos .clk-pop { border-color: var(--pos); color: var(--pos); }
+.clk-tone-pos .clk-bub { background: color-mix(in srgb, var(--pos) 14%, var(--panel)); border-color: var(--pos); color: var(--pos); }
 .clk-controls { max-width: 560px; margin: 8px auto; }
 .clk-controls .in { width: 5.5em; }
 .clk-controls .note { text-align: left; }

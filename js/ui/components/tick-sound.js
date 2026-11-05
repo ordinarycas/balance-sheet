@@ -15,6 +15,13 @@ export function enableSound() {
   return true;
 }
 
+/** 同 enableSound，但回傳 Promise：真的可以發聲了才 resolve（回傳 true）。 */
+export async function unlockSound() {
+  if (!enableSound()) return false;
+  try { await ctx.resume(); } catch { /* 忽略 */ }
+  return soundReady();
+}
+
 export function disableSound() {
   try { ctx?.suspend(); } catch { /* 忽略 */ }
 }

@@ -3,7 +3,7 @@ import { h } from '../dom.js';
 import { twd } from '../fmt.js';
 import { todayTaipei, dn, iso } from '../../core/dates.js';
 import { progressSummary, spanText } from '../../core/payoff.js';
-import { nextRepayment, nextPayday, remaining, startOfDayMs } from '../../core/countdown.js';
+import { nextRepayment, nextPayday, remaining, startOfDayMs, dueOn } from '../../core/countdown.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 let timer = null;
@@ -44,8 +44,9 @@ export function countdownCards(app) {
   const today = todayTaipei();
   const ev = nextRepayment(app.model.calendar.events, today);
   const payDate = nextPayday(today, app.state.settings.payDay);
+  const due = ev ? dueOn(app.model.calendar.events, ev.date) : null; // 費用取自行事曆：那一天所有要繳的款項合計
   const repay = ev
-    ? card('近期還款', ev.date, `${ev.date} ${ev.weekday}　${ev.item}`, `金額 ${twd(-ev.amount)}`, daysLeft(ev.date) <= 3)
+    ? card('近期還款', ev.date, `${ev.date} ${ev.weekday}　${due.items.length > 1 ? `${ev.item} 等 ${due.items.length} 筆` : ev.item}`, `應繳合計 ${twd(due.total)}${due.items.length > 1 ? `（${due.items.map((x) => `${x.item} ${twd(x.amount)}`).join('、')}）` : ''}`, daysLeft(ev.date) <= 3)
     : h('div', { class: 'card cd' }, h('div', { class: 'l', text: '近期還款' }), h('div', { class: 'cd-main', text: '12 個月視窗內沒有應還款項' }));
   const pay = payDate
     ? card('下次發薪', payDate, `${payDate}　每月 ${app.state.settings.payDay} 日${app.state.settings.payDay > 28 ? '（無該日則月底）' : ''}`, null, false)

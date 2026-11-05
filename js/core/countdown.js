@@ -27,3 +27,9 @@ export function remaining(date, nowMs) {
   const s = Math.floor(ms / 1000);
   return { days: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
 }
+
+/** 行事曆上某一天所有要繳的款項（支出，含房租、水電等）與合計（正數）。 */
+export function dueOn(events, date) {
+  const items = events.filter((e) => e.date === date && e.amount < 0).map((e) => ({ item: e.item, cat: e.cat, amount: -e.amount }));
+  return { items, total: items.reduce((a, x) => a + x.amount, 0) };
+}
