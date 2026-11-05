@@ -15,6 +15,10 @@ function timesFor(labels, monthKeys) {
 
 export async function draw(wrap, container, spec, th) {
   const { labels, series, stacked, kind, yFmt, tipFmt, monthKeys } = spec;
+  // 引擎自己會在圖裡放可聚焦的元素，role=img 底下不能有可聚焦的子元素（axe: nested-interactive），所以用 group
+  container.setAttribute('role', 'group');
+  container.setAttribute('aria-roledescription', '圖表');
+  container.setAttribute('aria-label', spec.title || '圖表');
   const times = timesFor(labels, monthKeys);
   const labelOf = new Map(times.map((t, i) => [t, labels[i]]));
   const chart = createChart(container, {

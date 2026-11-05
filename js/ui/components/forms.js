@@ -105,8 +105,8 @@ export function labeled(label, control, hint) {
   return h('label', { class: 'field' }, h('span', { text: label }), control, hint ? h('span', { class: 'note', text: hint }) : null);
 }
 
-export function button(label, onClick, cls = '', title) {
-  return h('button', { type: 'button', class: cls, onClick, title }, label);
+export function button(label, onClick, cls = '', title, disabled = false) {
+  return h('button', { type: 'button', class: cls, onClick, title, disabled }, label);
 }
 
 export function deleteButton(onClick, label = '刪除') {

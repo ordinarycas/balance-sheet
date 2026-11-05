@@ -14,7 +14,7 @@ export function quoteStatus(app) {
   else if (q.status === 'fail') text = `行情服務暫時無法使用，已改用手動股價。${q.errors[0] ? `（${q.errors[0]}）` : ''}`;
   else text = '尚未取得行情。';
   return h('div', { class: `banner ${q.status === 'ok' && !q.missing.length ? 'info' : ''} no-print` }, text, ' ',
-    button('重新整理', () => app.refreshQuotes(true), 'small'));
+    button('重新整理', () => app.refreshQuotes(true), 'small', app.prefs.autoQuotes ? '重新向證交所取得最近收盤價' : '自動行情已關閉，無法重新整理', !app.prefs.autoQuotes));
 }
 
 export default function render(app) {

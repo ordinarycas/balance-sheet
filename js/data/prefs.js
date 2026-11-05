@@ -1,5 +1,5 @@
 // 使用者偏好（僅存本機 localStorage，不屬於 JSON 匯出結構）。
-import { safeGet, safeSet } from './storage.js';
+import { safeGet, safeSet, safeRemove } from './storage.js';
 
 const KEY = 'pfs.prefs.v1';
 
@@ -7,6 +7,7 @@ export const DEFAULT_PREFS = {
   autoQuotes: true,        // 開啟時自動向公開行情服務取得最近收盤價
   finmind: false,          // 證交所查無時，改向 FinMind 逐檔查詢（會送出股票代號）
   autoFx: true,            // 自動取得 USD/TWD 匯率
+  autoUpdate: true,        // 自動（背景）檢查網站有沒有新版；關閉後只有按「檢查更新」才會連線
   hideExportWarning: false,
   lastBackupAt: 0,         // 上次匯出備份時間（毫秒）
   editsSinceBackup: 0,     // 備份後的修改次數
@@ -80,6 +81,12 @@ export function getPrefs() {
   if (!Number.isFinite(p.chartIncome) || p.chartIncome < 0) p.chartIncome = 0;
   cache = p;
   return p;
+}
+
+/** 清除所有偏好設定（回到預設值），連同儲存的內容一起移除。 */
+export function resetPrefs() {
+  safeRemove(KEY);
+  cache = null;
 }
 
 export function setPref(key, value) {

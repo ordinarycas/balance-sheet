@@ -87,6 +87,67 @@ export function lifeTimeline({ age, endAge, retireAge, extra = [] }) {
 }
 
 /**
+ * 滑鼠移過／手指滑過：十字線、左側 Y 軸金額標籤、下方年齡標籤，以及列出各條線金額的提示框。
+ * 只用 SVG 屬性與 CSS class（不使用 inline style，符合 CSP）。
+ */
+function hoverLayer({ M, W, H, x0, endAge, x, y, series }) {
+  const g = svg('g', { class: 'lc-hover', visibility: 'hidden', 'pointer-events': 'none' });
+  const vline = svg('line', { class: 'lc-cross', y1: M.t, y2: H - M.b });
+  const hline = svg('line', { class: 'lc-cross', x1: M.l, x2: W - M.r });
+  const yBox = svg('rect', { class: 'lc-tag', height: 16, rx: 3 });
+  const yTxt = txt('lc-tagtxt', { 'text-anchor': 'start' }, '');
+  const xBox = svg('rect', { class: 'lc-tag', height: 16, rx: 3 });
+  const xTxt = txt('lc-tagtxt', { 'text-anchor': 'middle' }, '');
+  const tipBox = svg('rect', { class: 'lc-tip', rx: 4 });
+  const dots = series.map((sr) => svg('circle', { class: `lc-hdot ${sr.cls}`, r: 4 }));
+  const lines = series.map(() => txt('lc-tiptxt', {}, ''));
+  const head = txt('lc-tiptxt strong', {}, '');
+  g.append(vline, hline, yBox, yTxt, xBox, xTxt, tipBox, head, ...lines, ...dots);
+  const overlay = svg('rect', { class: 'lc-overlay', x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: 'transparent' });
+  const move = (e) => {
+    const svgEl = overlay.ownerSVGElement;
+    const r = svgEl.getBoundingClientRect();
+    if (!r.width) return;
+    const px = ((e.clientX - r.left) * W) / r.width;
+    let a = x0 + ((px - M.l) * (endAge - x0)) / (W - M.l - M.r);
+    a = Math.min(Math.max(a, x0), endAge);
+    const vals = series.map((sr) => sr.at(a));
+    const cx = x(a);
+    const main = vals[0];
+    vline.setAttribute('x1', cx.toFixed(1)); vline.setAttribute('x2', cx.toFixed(1));
+    hline.setAttribute('y1', y(main).toFixed(1)); hline.setAttribute('y2', y(main).toFixed(1));
+    const yl = twd(main);
+    yTxt.textContent = yl;
+    const yw = yl.length * 7.5 + 10;
+    yBox.setAttribute('width', yw); yBox.setAttribute('x', (M.l + 2).toFixed(1)); yBox.setAttribute('y', (y(main) - 8).toFixed(1));
+    yTxt.setAttribute('x', (M.l + 7).toFixed(1)); yTxt.setAttribute('y', (y(main) + 4).toFixed(1));
+    const xl = age1(a);
+    xTxt.textContent = xl;
+    const xw = 56;
+    const bx = Math.min(Math.max(cx, M.l + xw / 2), W - M.r - xw / 2);
+    xBox.setAttribute('width', xw); xBox.setAttribute('x', (bx - xw / 2).toFixed(1)); xBox.setAttribute('y', H - M.b + 1);
+    xTxt.setAttribute('x', bx.toFixed(1)); xTxt.setAttribute('y', H - M.b + 13);
+    dots.forEach((d, i) => { d.setAttribute('cx', cx.toFixed(1)); d.setAttribute('cy', y(vals[i]).toFixed(1)); });
+    head.textContent = xl;
+    lines.forEach((t, i) => { t.textContent = `${series[i].name}：${twd(vals[i])}`; });
+    const wOf = (str) => [...str].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? 13 : 7.5), 0);
+    const tw = Math.max(...lines.map((t) => wOf(t.textContent)), 60) + 18;
+    const th = 22 + lines.length * 16;
+    const tx = Math.max(M.l + 2, cx + 12 + tw > W - M.r ? cx - 12 - tw : cx + 12);
+    const ty = M.t + 4;
+    tipBox.setAttribute('width', tw); tipBox.setAttribute('height', th); tipBox.setAttribute('x', tx.toFixed(1)); tipBox.setAttribute('y', ty);
+    head.setAttribute('x', (tx + 8).toFixed(1)); head.setAttribute('y', ty + 15);
+    lines.forEach((t, i) => { t.setAttribute('x', (tx + 8).toFixed(1)); t.setAttribute('y', ty + 31 + i * 16); });
+    g.setAttribute('visibility', 'visible');
+  };
+  overlay.addEventListener('pointermove', move);
+  overlay.addEventListener('pointerdown', move);
+  overlay.addEventListener('pointerleave', () => g.setAttribute('visibility', 'hidden'));
+  overlay.addEventListener('pointercancel', () => g.setAttribute('visibility', 'hidden'));
+  return { g, overlay };
+}
+
+/**
  * 累積收入曲線：從現在到退休，每月領固定月收入，累積值是一條斜線；退休後持平。
  * @param {{age:number, endAge:number, retireAge:number, monthly:number}} o
  */
@@ -139,9 +200,17 @@ export function incomeCurve({ age, endAge, retireAge, monthly, startAge = 0, bas
   const label = `累積收入曲線：從 ${age1(age)} 開始月收入 ${twd(monthly)}，到 ${age1(stop)} 累積 ${twd(total)}`
     + (useBase ? `；對照：從 ${baseFrom} 歲就領基本工資 ${twd(baseMonthly)}，到 ${age1(stop)} 累積 ${twd(base)}` : '')
     + (late !== null ? `；從 ${startAge} 歲才開始則累積 ${twd(late)}` : '') + `；橫軸為年齡，每 1 歲一小格，到 ${age1(endAge)}`;
+  const hover = hoverLayer({
+    M, W, H, x0, endAge, x, y, iw,
+    series: [
+      { name: '從現在開始', cls: 'main', at: (a) => cum(a, age, monthly) },
+      ...(useBase ? [{ name: `${baseFrom} 歲起基本工資`, cls: 'base', at: (a) => cum(a, baseFrom, baseMonthly) }] : []),
+      ...(late !== null ? [{ name: `${startAge} 歲才開始`, cls: 'late', at: (a) => cum(a, startAge, monthly) }] : []),
+    ],
+  });
   const pic = svg('svg', { class: 'lc-svg', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': label },
     ...grid, svg('path', { class: 'lc-area', d: area }), baseLine, svg('path', { class: 'lc-line', d: P(mainPts) }), lateLine,
-    svg('line', { class: 'lc-base', x1: M.l, x2: W - M.r, y1: y(0), y2: y(0) }), ...xAxis, today, dot, note, baseNote);
+    svg('line', { class: 'lc-base', x1: M.l, x2: W - M.r, y1: y(0), y2: y(0) }), ...xAxis, today, dot, note, baseNote, hover.g, hover.overlay);
 
   const legend = h('div', { class: 'legend' },
     h('span', null, h('i', { class: 'sw sw0' }), `從現在開始（月收入 ${twd(monthly)}）`),

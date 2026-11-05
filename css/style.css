@@ -479,3 +479,15 @@ table.dayheat .hd, table.dayheat .hc { color: var(--ink); }
 .lc-xtick { stroke: var(--muted); stroke-width: 1; opacity: .6; } .lc-xtick.major { opacity: 1; }
 .lc-vgrid { stroke: var(--line); stroke-width: 1; opacity: .6; }
 .lc-today { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* 累積收入曲線：滑過／觸控顯示的十字線、Y 軸金額標籤與提示框 */
+.lc-overlay { touch-action: pan-y; cursor: crosshair; }
+.lc-cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.lc-tag { fill: var(--text); }
+.lc-tagtxt { fill: var(--panel); font-size: 11px; font-weight: 600; }
+.lc-tip { fill: var(--panel); stroke: var(--line); stroke-width: 1; }
+.lc-tiptxt { fill: var(--text); font-size: 12px; }
+.lc-tiptxt.strong { font-weight: 700; }
+.lc-hdot { fill: var(--c1); stroke: var(--panel); stroke-width: 2; }
+.lc-hdot.base { fill: var(--muted); }
+.lc-hdot.late { fill: var(--c2, var(--muted)); }

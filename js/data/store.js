@@ -2,9 +2,12 @@
 import { validateObject } from './validate.js';
 import { emptyState, SECTIONS } from './schema.js';
 import { safeGet, safeSet, safeRemove } from './storage.js';
+import { resetPrefs } from './prefs.js';
 
 const KEY = 'pfs.state.v1';
 const RESTORE_KEY = 'pfs.restore.v1';
+/** 本站在 localStorage 的其他鍵（時鐘堆積、底部面板高度）；偏好設定由 prefs.js 負責。 */
+export const OTHER_LOCAL_KEYS = ['pfs.clock.pile.v1', 'pfs.clock.pay.pile.v1', 'pfs.sheetHeight'];
 
 let state = null;
 let loadNote = null;
@@ -106,9 +109,12 @@ export function applyImport(incoming, mode, sections = SECTIONS) {
   return { ok: true };
 }
 
+/** 清掉本站在此瀏覽器儲存的一切：資料、還原點、偏好設定（生日、性別、現金、時鐘設定…）與時鐘堆積。 */
 export function clearAll() {
   safeRemove(KEY);
   safeRemove(RESTORE_KEY);
+  for (const k of OTHER_LOCAL_KEYS) safeRemove(k);
+  resetPrefs();
   state = emptyState();
   loadNote = null;
   emit();

@@ -5,8 +5,31 @@ import { SIM_MONTHS } from './constants.js';
 import { feeActive } from './expenses.js';
 
 /**
+ * 攤還型借款「基準日之後」每期的計畫：{month, rate, pmt(NT$，常態月付金，不含提前還款), prepay(NT$，已登記的提前還款)}。
+ * 取自攤還表，所以已登記的利率變更與提前還款（含重算後的月付金）都會反映在模擬裡。
+ */
+function planOf(s, paid) {
+  const rows = s.rows;
+  const regular = (i) => {
+    // 末期的 payment 是「結清餘額」，不是常態月付金，改用前一期；只剩一期時用原月付金
+    if (i < rows.length - 1) return D(rows[i].payment).minus(rows[i].prepay ?? 0);
+    return i > 0 ? D(rows[i - 1].payment).minus(rows[i - 1].prepay ?? 0) : D(s.pmt);
+  };
+  const plan = [];
+  for (let i = paid; i < rows.length; i++) {
+    plan.push({
+      month: rows[i].due.slice(0, 7),
+      rate: rows[i].rate ?? s.annualRate,
+      pmt: regular(i).mul(s.fx).toNumber(),
+      prepay: D(rows[i].prepay ?? 0).mul(s.fx).toNumber(),
+    });
+  }
+  return plan;
+}
+
+/**
  * 組出債務清單（雪崩順序：年利率高→低；同利率質押優先，再依原順序）。
- * 每筆：{id,name,type,rate,balance(NT$),pmt(NT$，僅攤還型)}
+ * 每筆：{id,name,type,rate(基準日適用利率),balance(NT$),pmt(NT$，僅攤還型，基準日之後的現行月付金),plan}
  */
 export function buildDebts(schedules, statuses, pledgeCalc) {
   const debts = [];
@@ -16,11 +39,14 @@ export function buildDebts(schedules, statuses, pledgeCalc) {
   schedules.forEach((s, i) => {
     const st = statuses[i];
     if (s.error || !s.rows.length) return;
+    const amort = s.kind !== 'interest_only_annual';
+    const plan = amort ? planOf(s, st.paidPeriods) : [];
     debts.push({
       id: s.loanId, name: s.name,
-      type: s.kind === 'interest_only_annual' ? 'interest_only' : 'amortizing',
-      rate: s.annualRate, balance: st.balanceTWD,
-      pmt: s.kind === 'interest_only_annual' ? 0 : D(s.pmt).mul(s.fx).toNumber(),
+      type: amort ? 'amortizing' : 'interest_only',
+      rate: st.annualRate ?? s.annualRate, balance: st.balanceTWD,
+      pmt: amort ? (plan.length ? plan[0].pmt : D(s.pmt).mul(s.fx).toNumber()) : 0,
+      plan,
       annualInterestTWD: s.kind === 'interest_only_annual' ? D(s.annualInterest).mul(s.fx).toNumber() : 0,
       order: i,
     });
@@ -35,7 +61,8 @@ export function buildBudget(state, debts, asOfMonth) {
   const rent = Math.abs(state.rent?.monthlyRent ?? 0);
   items.push({ label: '房租', amount: rent });
   items.push({ label: '網路費', amount: Math.abs(state.home?.internetFee ?? 0) });
-  const fees = (state.cards?.fixedFees || []).filter((f) => !f.end || f.end >= asOfMonth);
+  // 固定費用只算「已經開始、尚未結束」的；年繳費用平均攤到每個月，所以只看起訖月，不看繳費月
+  const fees = (state.cards?.fixedFees || []).filter((f) => (!f.start || f.start <= asOfMonth) && (!f.end || f.end >= asOfMonth));
   for (const f of fees) {
     const abs = Math.abs(f.amount);
     items.push({ label: f.cycle === 'yearly' ? `${f.item}（年繳÷12）` : f.item, amount: f.cycle === 'yearly' ? D(abs).div(12).toNumber() : abs });
@@ -52,22 +79,35 @@ export function buildBudget(state, debts, asOfMonth) {
   return { items, fixed: fixed.toNumber(), must, mustTotal: mustTotal.toNumber(), total: fixed.plus(mustTotal).toNumber() };
 }
 
-/** 單一月薪情境的 120 個月模擬。 */
+/**
+ * 單一月薪情境的 120 個月模擬。
+ * 每月利息 ＝ 期初餘額 × 當月適用年利率 ÷ 12（簡化：不是依實際天數）；
+ * 攤還型借款每月的利率、常態月付金與「已登記的提前還款」取自攤還表的計畫（debt.plan），沒有計畫的月份沿用上一期。
+ */
 export function simulate(salary, fixed, debts, startMonth) {
   const sal = D(salary);
   const fix = D(fixed);
   const bal = debts.map((d) => D(d.balance));
+  const plans = debts.map((d) => new Map((d.plan ?? []).map((p) => [p.month, p])));
+  const cur = debts.map((d) => ({ rate: d.rate, pmt: d.pmt, prepay: 0 }));
   const rows = [];
   let cumGap = new Decimal(0);
   let intTotal = new Decimal(0);
   for (let t = 1; t <= SIM_MONTHS; t++) {
+    const month = monthKeyAdd(startMonth, t - 1);
+    debts.forEach((d, i) => {
+      const p = plans[i].get(month);
+      if (p) cur[i] = { rate: p.rate, pmt: p.pmt, prepay: p.prepay };
+      else cur[i] = { ...cur[i], prepay: 0 };
+    });
     const open = bal.map((b) => b);
-    const interest = debts.map((d, i) => open[i].mul(d.rate).div(12));
+    const interest = debts.map((d, i) => open[i].mul(cur[i].rate).div(12));
     const req = debts.map((d, i) => {
       if (d.type !== 'amortizing') return new Decimal(0);
       if (open[i].lte(0)) return new Decimal(0);
-      const p = D(d.pmt).minus(interest[i]);
-      return Decimal.min(open[i], Decimal.max(p, 0));
+      const p = D(cur[i].pmt).minus(interest[i]);
+      // 已登記的提前還款是計畫內的支出，和月付金一樣算「必繳」
+      return Decimal.min(open[i], Decimal.max(p, 0).plus(cur[i].prepay));
     });
     const must = sum(interest).plus(sum(req));
     const surplus = sal.minus(fix).minus(must);

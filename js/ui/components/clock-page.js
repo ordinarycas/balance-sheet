@@ -34,6 +34,7 @@ function face() {
  *   perSecond:number, onDayChange?:(today:string)=>void,
  *   sign:'+'|'-',                         // 浮動數字前的正負號：利息 '-'、薪資 '+'
  *   todayTotal:(c:{secOfDay:number}, day:{y:number,m:number,d:number})=>number,  // 今天 00:00 起累積；堆的合計要等於它
+ *   todayLabel?:string,  // 「今天累積」的標籤（堆積說明引用同一句，兩處文字才會一致）
  *   active?:(c:{secOfDay:number})=>boolean,  // 目前是否在累積時段（薪資時鐘的上班時間）；省略＝一直是
  *   inactive:Node|string|null,           // perSecond 為 0 時顯示的說明
  *   beforeControls?:Node|null,           // 控制項上方的額外區塊（例如月薪來源）
@@ -124,7 +125,7 @@ export function buildClockPage(app, cfg) {
 
   const showPile = (p) => {
     pileInfo.textContent = cap > 0 && popOn && cfg.perSecond > 0
-      ? `堆積中：${p.size} 顆，合計 NT$ ${fmt5(p.total)}（從你開啟頁面起累積；每日重新開始）`
+      ? `堆積中：${p.size} 顆，合計 NT$ ${fmt5(p.total)}（等於「${cfg.todayLabel ?? '今天 00:00 起累積'}」，包含你不在頁面時累積的；每天 00:00 重新開始）`
       : '';
   };
   async function initPile() {

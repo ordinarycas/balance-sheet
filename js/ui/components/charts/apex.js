@@ -7,6 +7,10 @@ export async function draw(wrap, container, spec, th) {
   await Promise.all([loadScript('apexcharts.min.js'), loadCss('apexcharts.css', 'apexcharts-css')]);
   const ApexCharts = globalThis.ApexCharts;
   const { labels, series, stacked, kind, yFmt, tipFmt } = spec;
+  // 引擎自己會在圖裡放可聚焦的元素，role=img 底下不能有可聚焦的子元素（axe: nested-interactive），所以用 group
+  container.setAttribute('role', 'group');
+  container.setAttribute('aria-roledescription', '圖表');
+  container.setAttribute('aria-label', spec.title || '圖表');
   const single = series.length === 1;
   const type = kind === 'bar' ? 'bar' : single ? 'area' : 'line';
 

@@ -1,5 +1,6 @@
 // 應用程式進入點：載入狀態、計算模型、路由、行情／匯率更新。
 import { getState, subscribe, getLoadNote, hasData } from './data/store.js';
+import { isMemoryOnly, onStorageFailure } from './data/storage.js';
 import { BUILD_ID, BUILD_DATE } from './core/build.js';
 import { APP_VERSION } from './core/constants.js';
 import { canPrompt, isStandalone, onInstallChange, promptInstall } from './ui/install.js';
@@ -54,6 +55,8 @@ export const app = {
   rerender: () => schedule(),
   print: printPage,
   refreshQuotes, refreshFx, setPref(k, v) { this.prefs = setPref(k, v); applyTheme(); schedule(); },
+  /** 清除資料後：偏好已被清掉，回到預設的外觀與行情狀態。 */
+  afterClear() { this.prefs = getPrefs(); this.quotes = {}; this.fx = null; applyTheme(); schedule(); },
 };
 
 function stockCodes(state) {
@@ -67,7 +70,8 @@ function recompute() {
   app.asOf = state.settings.asOfDate || todayTaipei();
   app.usdTwd = app.prefs.autoFx && app.fx ? app.fx.rate : state.settings.usdTwdManual;
   try {
-    app.model = computeModel(state, { asOf: app.asOf, usdTwd: app.usdTwd, quotes: app.quotes });
+    // 關閉自動行情時，即使先前抓到過價格也不採用（橫幅寫「使用手動股價」，計算就要一致）
+    app.model = computeModel(state, { asOf: app.asOf, usdTwd: app.usdTwd, quotes: app.prefs.autoQuotes ? app.quotes : {} });
     app.modelError = null;
   } catch (e) {
     console.error(e);
@@ -77,6 +81,8 @@ function recompute() {
 
 async function refreshQuotes(force = false) {
   const codes = stockCodes(getState());
+  // 開關關閉＝不連線；順便丟掉已抓到的價格，回到手動股價
+  if (!getPrefs().autoQuotes) { app.quotes = {}; app.quoteInfo = { status: 'idle', fetchedAt: null, errors: [], missing: [], twse: null, finmind: null }; schedule(); return; }
   if (!codes.length) { app.quotes = {}; app.quoteInfo = { status: 'idle', fetchedAt: null, errors: [], missing: [], twse: null, finmind: null }; schedule(); return; }
   if (force) clearQuoteCache();
   app.quoteInfo = { ...app.quoteInfo, status: 'loading' };
@@ -93,7 +99,7 @@ async function refreshQuotes(force = false) {
 
 async function refreshFx() {
   const hasUsd = getState().loans.some((l) => l.currency === 'USD');
-  if (!hasUsd) { app.fx = null; app.fxStatus = 'idle'; schedule(); return; }
+  if (!getPrefs().autoFx || !hasUsd) { app.fx = null; app.fxStatus = 'idle'; schedule(); return; }
   app.fxStatus = 'loading';
   schedule();
   const fx = await fetchUsdTwd();
@@ -246,7 +252,9 @@ async function doRender() {
   const upd = app.updateReady || updState.available ? h('div', { class: 'banner no-print', role: 'status' }, h('strong', { text: '網站已有新版本。' }), ' 按下「立即更新」即可套用（你的資料不會受影響）。　',
     h('button', { type: 'button', class: 'small', text: '立即更新', onClick: () => applyUpdate() })) : null;
   const due = app.route === 'data' ? null : reminderBanner(app, schedule);
-  main.replaceChildren(...(note ? [h('div', { class: 'banner' }, note)] : []), ...(upd ? [upd] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
+  const noSave = isMemoryOnly() ? h('div', { class: 'banner error no-print', role: 'alert' }, h('strong', { text: '資料沒有存進這個瀏覽器。' }),
+    ' 可能是私密瀏覽模式、停用了網站儲存，或儲存空間已滿。目前輸入的內容只暫存在這個分頁，關閉或重新整理後會消失。請先到 ', h('a', { href: '#/data', text: 'P12 資料匯入／匯出' }), ' 匯出備份，並清出空間或改用一般視窗。') : null;
+  main.replaceChildren(...(noSave ? [noSave] : []), ...(note ? [h('div', { class: 'banner' }, note)] : []), ...(upd ? [upd] : []), ...(due ? [due] : []), ...(reminder ? [backupBanner(reminder)] : []), node);
   renderedRoute = app.route;
   if (keep) restoreUiState(main, keep);
   document.title = `${ROUTES.find((r) => r[0] === app.route)[1].replace(/^P\d+ /, '')} - 個人資產負債表`;
@@ -280,6 +288,9 @@ window.addEventListener('hashchange', () => {
   render();
 });
 
+// 寫入失敗時立刻跳一次提示（橫幅會一直顯示到寫入恢復正常）
+onStorageFailure(() => toast('無法把資料存進這個瀏覽器（私密模式或空間已滿）。目前內容只暫存在此分頁，請先匯出備份。', 'error', 9000));
+
 let lastCodes = '';
 let lastHasUsd = null;
 subscribe((s) => {
@@ -300,7 +311,7 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) { app.updateReady = true; schedule(); } });
     navigator.serviceWorker.register('sw.js').then((reg) => {
       app.swReg = reg;
-      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && getPrefs().autoUpdate) reg.update().catch(() => {}); });
     }).catch((e) => console.warn('Service Worker 註冊失敗', e));
   }
 }
@@ -321,8 +332,8 @@ applyTheme();
 initBottomNav(ROUTES, { onCheckUpdate: () => checkForUpdate() });
 onUpdateState(() => schedule());
 // 回到前景時靜默檢查一次（最多每 30 分鐘一次），發現新版就顯示橫幅
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - updState.lastCheckAt > 30 * 60 * 1000) checkForUpdate({ quiet: true }); });
-checkForUpdate({ quiet: true });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && getPrefs().autoUpdate && Date.now() - updState.lastCheckAt > 30 * 60 * 1000) checkForUpdate({ quiet: true }); });
+if (getPrefs().autoUpdate) checkForUpdate({ quiet: true });
 document.getElementById('theme-toggle')?.addEventListener('click', () => app.setPref('theme', isDark() ? 'light' : 'dark'));
 // 「自動」主題：系統深淺色改變時即時重繪（含圖表）
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (getPrefs().theme === 'auto') schedule(); });

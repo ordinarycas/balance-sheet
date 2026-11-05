@@ -10,6 +10,7 @@ import { validateText } from '../../data/validate.js';
 import { applyImport, restore, hasRestorePoint, clearAll, getState } from '../../data/store.js';
 import { SECTIONS, SECTION_LABELS } from '../../data/schema.js';
 import { MAX_IMPORT_BYTES } from '../../core/constants.js';
+import { unregisterBackground } from '../reminder.js';
 
 let pending = null; // {name, result, mode, sections:Set, ack:boolean}
 let excelBusy = false;
@@ -205,8 +206,11 @@ export default function render(app) {
       h('button', { type: 'button', class: 'danger', onClick: () => {
         if (confirmInput.value.trim() !== '清除') { app.toast('請先在欄位輸入「清除」'); return; }
         if (!confirm('確定要清除這個瀏覽器中的所有本機資料？此動作無法復原（建議先匯出備份）。')) return;
-        clearAll(); pending = null; app.toast('已清除本機資料。'); app.navigate('overview');
+        clearAll(); pending = null;
+        unregisterBackground(); // 繳費提醒的背景快照（含應繳項目與金額）也一併移除
+        app.afterClear();
+        app.toast('已清除本機資料。'); app.navigate('overview');
       } }, '清除本機資料')),
-    h('p', { class: 'note', text: '只會清除本網站在此瀏覽器儲存的資料與還原點。' })));
+    h('p', { class: 'note', text: '會清除本網站在此瀏覽器儲存的一切：財務資料、還原點，以及生日、性別、現金、預計退休年齡、時鐘設定與堆積、繳費提醒快照等偏好設定。已匯出的檔案不受影響。' })));
   return root;
 }

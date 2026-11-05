@@ -14,7 +14,8 @@ function toggle(app, key, label, hint) {
   const box = h('input', { type: 'checkbox', checked: !!app.prefs[key] });
   box.addEventListener('change', () => {
     app.setPref(key, box.checked);
-    if (key === 'autoQuotes' || key === 'finmind') app.refreshQuotes(true);
+    // 只有「開啟」才會連線；關閉時 refresh 只會清掉已抓到的資料，不發出請求
+    if (key === 'autoQuotes' || (key === 'finmind' && box.checked)) app.refreshQuotes(true);
     if (key === 'autoFx') app.refreshFx();
   });
   return h('div', { class: 'toggle' }, h('label', null, box, h('span', { text: label })), hint ? h('p', { class: 'note', text: hint }) : null);
@@ -33,7 +34,7 @@ export default function render(app) {
     labeled('USD/TWD 匯率（手動備援）', numField({ value: st.settings.usdTwdManual, min: 0, step: '0.0001', mutate: (d, v) => { d.settings.usdTwdManual = v; } }), '自動匯率取不到時使用')),
   h('div', { class: 'row' }, h('span', null, `目前採用匯率：${app.usdTwd.toFixed(4)}（${app.prefs.autoFx && fx ? `自動，${fx.source}${fx.date ? ` ${fx.date}` : ''}` : '手動'}）`),
     app.fxStatus === 'fail' ? h('span', { class: 'pill warn', text: '自動匯率暫時無法取得，使用手動' }) : null,
-    button('重新取得匯率', () => app.refreshFx()))));
+    button('重新取得匯率', () => app.refreshFx(), '', app.prefs.autoFx ? '重新向公開匯率服務取得' : '自動匯率已關閉；到下方「網路服務」開啟後才能使用', !app.prefs.autoFx))));
 
   root.appendChild(section('名稱設定（戶頭、卡片、借款）', namesBlock(app)));
 
@@ -41,11 +42,12 @@ export default function render(app) {
 
   root.appendChild(section('繳費提醒', remindBlock(app)));
 
-  root.appendChild(section('網路服務（皆可關閉；關閉後完全不發出任何網路請求）',
+  root.appendChild(section('網路服務（皆可關閉）',
     toggle(app, 'autoQuotes', '自動取得股價', '向證交所下載「全市場最近收盤價」一個檔案，不會送出你的持股或代號。非即時。'),
     toggle(app, 'finmind', '證交所查無時，改用 FinMind 查詢上櫃股票', '會把「查無的股票代號」送到 api.finmindtrade.com，可能洩漏你持有該檔；預設關閉。'),
     toggle(app, 'autoFx', '自動取得 USD/TWD 匯率', '向 open.er-api.com，失敗再向 cdn.jsdelivr.net 取得公開匯率；只在有美元借款時才查詢。'),
-    h('p', { class: 'note', text: '你的財務資料（借款、持股、明細）絕不會被送出。上述請求只含公開資訊的查詢。' })));
+    toggle(app, 'autoUpdate', '自動檢查網站更新', '向本網站自己的伺服器取得一個小檔（版本代號），不含任何你的資料。關閉後只有按「檢查更新」才會連線；已安裝的離線版本也不會在背景檢查。'),
+    h('p', { class: 'note', text: '三個「自動」開關關閉後，本站不會自己連線；你主動按「檢查更新」時才會向本網站伺服器確認版本。載入頁面本身（含本站的程式檔與圖表引擎）是從本網站伺服器下載，這不在開關範圍內。你的財務資料（借款、持股、明細）絕不會被送出，上述請求只含公開資訊的查詢。' })));
 
   root.appendChild(section('外觀', h('div', { class: 'formgrid appearance' },
     labeled('主題', choiceField({ value: app.prefs.theme, options: [['auto', '跟隨系統'], ['light', '淺色'], ['dark', '深色']], onChange: (v) => { app.setPref('theme', v); } })),

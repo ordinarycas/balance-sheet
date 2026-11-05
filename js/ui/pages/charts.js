@@ -47,7 +47,8 @@ export default function render(app) {
   const split = monthlySplit(m, chosen);
   const root = h('div', null,
     h('h1', { text: '圖表分析' }),
-    h('p', { class: 'sub', text: `基準日 ${app.asOf}；金額單位 NT$。資產＝質押股票＋未質押持股現值；本站不記錄現金、存款或不動產，所以「淨值」只反映股票相對借款。` }));
+    h('p', { class: 'sub', text: `基準日 ${app.asOf}；金額單位 NT$。資產＝質押股票＋未質押持股現值；本站不記錄現金、存款或不動產，所以「淨值」只反映股票相對借款。` }),
+    h('div', { class: 'row actions no-print' }, button('列印／存成 PDF', () => app.print(), '', '列印此頁的所有圖表與表格（一律用淺色、隱藏按鈕）')));
 
   // 1. 資產負債
   root.appendChild(section('資產與負債',

@@ -1,5 +1,5 @@
 // P18 薪資時鐘：把「月薪」代入利息時鐘——秒針每走一秒，就跳出這一秒累積的薪資。
-// 月薪來源：P03 的月薪情境（稅後）、現行基本工資、或自訂金額。假設：月薪平均分攤到每一天、每一秒（不論上班或休息）；
+// 月薪來源：P03 的月薪情境（稅後）、現行基本工資、或自訂金額。假設：月薪平均分攤到每一天；沒設定上下班時間就平均到整天的每一秒，設定後只分攤到上班時段（時段外不累積）；
 // 每日＝月薪 ÷ 當月天數，所以整個月累積剛好等於月薪。實際發薪日、扣稅與勞健保以公司為準。
 // 外殼與迴圈在 components/clock-page.js（與 P15 利息時鐘共用）。
 import { h } from '../dom.js';
@@ -62,7 +62,9 @@ export default function render(app) {
     h('span', { class: 'note', text: win ? `只在 ${app.prefs.payStart}–${app.prefs.payEnd} 累積薪資（共 ${(win.workSec / 3600).toFixed(1)} 小時）；時段外不浮出。` : '沒有設定上下班時間：薪資平均分攤到整天。' }),
     h('span', { class: 'note', text: monthly > 0 ? `目前代入月薪 ${twd(monthly)}；本月共 ${pay.days} 天。` : '尚未代入月薪。' })));
 
+  const todayLabel = win ? `今天 00:00 起累積（只算上班時段 ${app.prefs.payStart}–${app.prefs.payEnd}）` : '今天 00:00 起累積';
   return buildClockPage(app, {
+    todayLabel,
     title: '薪資時鐘',
     sub: '台北時間。把月薪代入時鐘：秒針每走一秒，就會跳出這一秒累積的薪資，讓你看見「時間本身」的價值；它不是每秒入帳的現金。',
     noun: '薪資',
@@ -88,7 +90,7 @@ export default function render(app) {
           kpi('每小時', `NT$ ${fmt5(pay.perHour)}`),
           kpi('每四小時', `NT$ ${fmt5(pay.perHour * 4)}`),
           kpi('每日', `NT$ ${fmt5(pay.daily)}`),
-          h('div', { class: 'kpi' }, h('div', { class: 'l', text: '今天 00:00 起累積' }),
+          h('div', { class: 'kpi' }, h('div', { class: 'l', text: todayLabel }),
             h('div', { class: 'v' }, 'NT$ ', counter('today').el, h('span', { class: 'sr-only', text: '（每秒更新）' }))),
           h('div', { class: 'kpi' }, h('div', { class: 'l', text: `本月 1 日起累積（月底＝月薪 ${twd(pay.monthly)}）` }),
             h('div', { class: 'v' }, 'NT$ ', counter('month').el, h('span', { class: 'sr-only', text: '（每秒更新）' })))),
