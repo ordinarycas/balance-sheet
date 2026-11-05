@@ -54,7 +54,7 @@ export default function render(app) {
     });
     return el;
   };
-  const picker = h('div', { class: 'card no-print' }, h('div', { class: 'incomebar' },
+  const picker = h('div', { class: 'card no-print lifeform' }, h('div', { class: 'incomebar' },
     labeled('月薪來源', choiceField({ label: '月薪來源', value: chosen, options: srcs.map((s) => [s[0], s[1]]), onChange: (v) => app.setPref('payClockSrc', v) })),
     chosen === 'custom' ? labeled('自訂月薪（NT$，稅後）', custom) : null,
     labeled('上班時間', timeIn('payStart', '上班時間')),
